@@ -12,7 +12,7 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { JwtAuthGuard } from './modules/auth/passport/jwt.guard';
 import { ProductsModule } from './modules/products/products.module';
-import { TransactionsModule } from './modules/transactions/transactions.module';
+
 
 
 
@@ -60,7 +60,7 @@ import { TransactionsModule } from './modules/transactions/transactions.module';
     UsersModule,
     AuthModule,
     ProductsModule,
-    TransactionsModule,
+   
   ],
   controllers: [AppController],
   providers: [
