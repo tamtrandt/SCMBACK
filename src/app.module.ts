@@ -12,6 +12,13 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { JwtAuthGuard } from './modules/auth/passport/jwt.guard';
 import { ProductsModule } from './modules/products/products.module';
+import { MulterModule } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
+import { Product } from './modules/products/entities/product.entity';
+
+
+
 
 
 
@@ -26,7 +33,7 @@ import { ProductsModule } from './modules/products/products.module';
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_DATABASE,
-      entities: [User],
+      entities: [User, Product],
       synchronize: true, 
     }),
     //Mail
@@ -56,10 +63,21 @@ import { ProductsModule } from './modules/products/products.module';
         },
        }),
     }),
+    //Files Module
+    MulterModule.register({
+      storage: diskStorage({
+        destination: './uploads',
+        filename: (req, file, cb) => {
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          cb(null, `${uniqueSuffix}${extname(file.originalname)}`);
+        },
+      }),
+    }),
     //Module
     UsersModule,
     AuthModule,
     ProductsModule,
+   
    
   ],
   controllers: [AppController],
