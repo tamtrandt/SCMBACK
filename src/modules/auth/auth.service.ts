@@ -32,51 +32,11 @@ export class AuthService {
     return null;
   }
 
-  // Hàm trả về JWT khi người dùng đăng nhập thành công
-  // async login(email: string, password: string) {
-  //   const user = await this.checkAccountStatus(email);
 
-  //   // Kiểm tra mật khẩu
-  //   const isPasswordValid = await comparePasswords(password, user.password);
-  //   if (!isPasswordValid) {
-  //     throw new BadRequestException('Invalid email or password.');
-  //   }
-
-  //   const payload = { email: user.email, sub: user.user_id, role: user.role };
-  //   const access_token = this.jwtService.sign(payload);
-
-  //       // Lưu token và thông tin người dùng vào session in-memory
-  //       this.saveToSession(user.user_id, access_token, user);
-
-  //   return {
-  //     user: { email: user.email, userid: user.user_id, username: user.username, role: user.role },
-  //     access_token: this.jwtService.sign(payload),
-  // };
-  // }
-  async login(email: string, password: string): Promise<{ access_token: string }> {
-    const user = await this.checkAccountStatus(email);
-    
-    // Kiểm tra mật khẩu
-    const isPasswordValid = await comparePasswords(password, user.password);
-    if (!isPasswordValid) {
-      throw new BadRequestException('Invalid email or password.');
-    }
-
+  async login(user: User): Promise<string> {
     const payload = { email: user.email, sub: user.user_id, role: user.role };
-    const access_token = this.jwtService.sign(payload);
-
-    return { access_token }; // Trả về access token
-  }
-
-  //Session
-  private saveToSession(userId: string, accessToken: string, userInfo: any) {
-    // Lưu thông tin vào session in-memory
-    this.sessions[userId] = { accessToken, userInfo };
-  }
-
-  getSession(userId: string) {
-    return this.sessions[userId]; // Hàm để lấy thông tin session
-  }
+    return this.jwtService.sign(payload); // Tạo JWT token
+}
 
 
 
@@ -115,10 +75,11 @@ export class AuthService {
     // Gửi email xác nhận
     await this.mailerService
     .sendMail({
-      to: 'finalproject6886@gmail.com', // list of receivers
-      from: 'noreply@nestjs.com', // sender address
-      subject: 'Testing Nest MailerModule ✔', // Subject line
-      text: 'welcome', // plaintext body
+      //to: newUser.email, 
+      to:"tamyxzt@gmail.com",
+      from: 'adhartbayer@gmail.com', // sender address
+      subject: 'Verify Code for Register Your Account ✔', // Subject line
+      text: 'WELCOME', // plaintext body
       template: "register",
       context: {
         username: newUser?.username  ?? newUser.email,
@@ -132,7 +93,6 @@ export class AuthService {
   }
 
   //Resend Email
-
   async resendVerification(email: string) {
     const user = await this.userRepository.findOne({ where: { email } });
   
@@ -147,9 +107,10 @@ export class AuthService {
     // Gửi email xác nhận
     await this.mailerService
     .sendMail({
-      to: 'finalproject6886@gmail.com', // list of receivers
-      from: 'noreply@nestjs.com', // sender address
-      subject: 'Resend for active your account ✔', // Subject line
+      //to: user.email, 
+      to:"tamyxzt@gmail.com",
+      from: 'adhartbayer@gmail.com', // sender address
+      subject: 'Resend for Active your account ✔', // Subject line
       text: 'welcome', // plaintext body
       template: "register",
       context: {
@@ -161,7 +122,6 @@ export class AuthService {
     return { message: 'Verification code sent again!!! Please check your mail.' };
   }
   
-
   async verifyEmail(code: string): Promise<any> {
     const user = await this.userRepository.findOne({ where: { code_id: code } });
 

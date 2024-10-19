@@ -15,39 +15,35 @@ export class AuthController {
 
 
 // Đăng nhập
-@UseGuards(LocalAuthGuard) // Guard xử lý xác thực local trước khi vào hàm này
-  @Public()
-  @Post('login')
-  async login(@Body() body: { email: string; password: string }, @Res() res: Response) {
-    const { email, password } = body;
+@UseGuards(LocalAuthGuard)
+@Public()
+@Post('login')
+async login(@Body() body: { email: string; password: string }, @Res() res: Response) {
+    const user = await this.authService.validateUser(body.email, body.password);
+    
+    // Kiểm tra tài khoản
+    if (!user) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+    }
 
-    // Kiểm tra trạng thái tài khoản và thực hiện xác thực
-    const user = await this.authService.checkAccountStatus(email);
-     // Gọi authService.login và lấy access_token
-  const result = await this.authService.login(email, password);
-    // Thiết lập cookie với access_token
-  res.cookie('access_token', result.access_token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 3600000,
-   
-  });
+    if (!user.isactive) {
+        return res.status(403).json({ message: 'Account is not activated' });
+    }
 
-    // // Bạn có thể thêm nhiều cookie nếu cần thiết
-    res.cookie('userInfo', JSON.stringify({
-      email: user.email,
-      userId: user.user_id,
-      username: user.username,
-      role: user.role
-    }), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 3600000,
-    });
+    // Tạo access token
+    const accessToken = await this.authService.login(user);
+    return res.json({ access_token: accessToken, role: user.role });
+}
 
-    // Trả về kết quả thành công
-    return res.send({ message: 'Login successful' });
-  }
+
+
+
+
+
+
+
+
+
 // Đăng ký
 @Public()
 @Post('register')

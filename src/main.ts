@@ -21,8 +21,7 @@ async function bootstrap() {
     credentials: true,
    }));
  
-  //Cookies Setup
-  app.use(cookieParser());
+ 
 
 
 
