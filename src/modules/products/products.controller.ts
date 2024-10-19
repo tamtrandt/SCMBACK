@@ -7,20 +7,33 @@ import {
   Param,
   Body,
   ParseIntPipe,
+  Res,
 } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductService } from './products.service';
 import { Public } from 'src/utils/decorator';
+import { ethers } from 'ethers';
+import { Response } from 'express';
+import { Product } from './entities/product.entity';
+import { ConfigService } from '@nestjs/config';
 
 @Controller('products')
 export class ProductController {
-  constructor(private readonly productService: ProductService) {}
+  constructor(private readonly productService: ProductService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @Public()
   @Post()
-  create(@Body() createProductDto: CreateProductDto) {
+  async create(@Body() createProductDto: CreateProductDto): Promise<Product> {
     return this.productService.create(createProductDto);
+  }
+  @Public()
+  @Get(':userAddress/cid')
+  async getCID(@Param('userAddress') userAddress: string) {
+    const cid = await this.productService.getCIDFromBlockchain(userAddress);
+    return { cid }; // Trả về CID
   }
 
 

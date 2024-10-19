@@ -25,4 +25,10 @@ export class Product {
 
   @Column('simple-array')
   files: string[];
+
+  @Column({ nullable: true }) // Cho phép null nếu chưa có dữ liệu IPFS
+  ipfsUrl: string;
+
+  @Column({ nullable: true }) // Block hash có thể null ban đầu
+  blockHash: string;
 }

@@ -12,14 +12,8 @@ export class CreateProductDto {
   @Max(99999999.99) // Giới hạn cho price
   price: number;
 
-  @IsString()
-  status: string;
-
   @IsNumber()
   quantity: number;
-
-  @IsString()
-  sku: string;
 
   @IsArray()
   @IsOptional()
