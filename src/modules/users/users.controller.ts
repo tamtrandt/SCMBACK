@@ -10,7 +10,7 @@ import { Request } from 'express';
 export class UsersController {
   constructor(private readonly userService: UsersService) {}
 
-  // Tạo user mới
+
   @Post()
   async create(@Body() createUserDto: CreateUserDto) {
     try {
@@ -21,13 +21,13 @@ export class UsersController {
     }
   }
 
-  // Lấy tất cả users
+
   @Get()
   async findAll() {
     return await this.userService.findAll();
   }
 
-  // Lấy user theo ID
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const user = await this.userService.findOne(id);
@@ -37,7 +37,7 @@ export class UsersController {
     return user;
   }
 
-  // Cập nhật user
+
   @Put(':id')
   async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     const updatedUser = await this.userService.updateUser(id, updateUserDto);
@@ -47,10 +47,10 @@ export class UsersController {
     return { message: 'User updated successfully', updatedUser };
   }
 
-  // Xóa user
+  
 @Delete(':id')
 async remove(@Param('id') id: string) {
-  const isDeleted = await this.userService.removeUser(id); // Đổi tên biến cho rõ nghĩa
+  const isDeleted = await this.userService.removeUser(id); 
   if (!isDeleted) {
     throw new HttpException('User not found', HttpStatus.NOT_FOUND);
   }
@@ -60,10 +60,10 @@ async remove(@Param('id') id: string) {
 
 @Get('profile')
 getProfile(@Req() req: Request) {
-  // Lấy thông tin từ cookie
+  
   const userInfo = req.cookies.userInfo;
 
-  // Nếu có cookie userInfo, bạn có thể trả về thông tin người dùng
+ 
   if (userInfo) {
     return JSON.parse(userInfo);
   }

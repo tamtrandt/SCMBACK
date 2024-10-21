@@ -10,6 +10,7 @@ import { Repository } from 'typeorm';
 import { MailerService } from '@nestjs-modules/mailer';
 import { v4 as uuidv4 } from 'uuid';
 import { Response } from 'express';
+import { access } from 'fs';
 
 @Injectable()
 export class AuthService {
@@ -33,9 +34,17 @@ export class AuthService {
   }
 
 
-  async login(user: User): Promise<string> {
-    const payload = { email: user.email, sub: user.user_id, role: user.role };
-    return this.jwtService.sign(payload); // Tạo JWT token
+  async login(user: any) {
+    const payload = { email: user.email, sub: user.user_id, role: user.role, isactive: user.isactive };
+    return {
+      user:{
+        email: user.email,
+        sub: user.user_id,
+        role: user.role,
+        isactive: user.isactive,
+      },
+      access_token: this.jwtService.sign(payload),
+    }; // Tạo JWT token
 }
 
 

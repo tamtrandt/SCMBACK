@@ -18,21 +18,8 @@ export class AuthController {
 @UseGuards(LocalAuthGuard)
 @Public()
 @Post('login')
-async login(@Body() body: { email: string; password: string }, @Res() res: Response) {
-    const user = await this.authService.validateUser(body.email, body.password);
-    
-    // Kiểm tra tài khoản
-    if (!user) {
-        return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    if (!user.isactive) {
-        return res.status(403).json({ message: 'Account is not activated' });
-    }
-
-    // Tạo access token
-    const accessToken = await this.authService.login(user);
-    return res.json({ access_token: accessToken, role: user.role });
+login(@Request() req) {
+    return this.authService.login(req.user);
 }
 
 
