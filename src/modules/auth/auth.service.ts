@@ -35,7 +35,7 @@ export class AuthService {
 
 
   async login(user: any) {
-    const payload = { email: user.email, sub: user.user_id, role: user.role, isactive: user.isactive };
+    const payload = { email: user.email, sub: user.user_id, role: user.role, isactive: user.isactive,username: user.username };
     return {
       user:{
         email: user.email,
@@ -44,7 +44,7 @@ export class AuthService {
         isactive: user.isactive,
       },
       access_token: this.jwtService.sign(payload),
-    }; // Tạo JWT token
+    }; 
 }
 
 
