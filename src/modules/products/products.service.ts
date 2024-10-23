@@ -35,8 +35,8 @@ export class ProductService {
     //Generate ID
     const generatedId = uuidv4();
     // Upload nhiều files lên Thirdweb IPFS dưới dạng một folder
-    //const ipfsFolderCid = await this.storage.upload(files);
-    const ipfsFolderCid = 'QmNMbC38Pauhp6QeZNrT4Kz1AFfjdLiZiCXZgJZrPRNWqK';
+    const ipfsFolderCid = await this.storage.upload(files);
+    //const ipfsFolderCid = 'QmNMbC38Pauhp6QeZNrT4Kz1AFfjdLiZiCXZgJZrPRNWqK';
 
     const ipfsFolderUrl = this.storage.resolveScheme(ipfsFolderCid); // Lấy URL của folder
     //Tao QR tu URL

@@ -1,10 +1,10 @@
 
 
+import { Type } from 'class-transformer';
 import { Allow, IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class CreateProductDto {
-  @IsNotEmpty()
-  @IsString()
+  @Allow()
   id: string;
   @IsNotEmpty()
   @IsString()
@@ -16,10 +16,12 @@ export class CreateProductDto {
 
   @IsNotEmpty()
   @IsNumber()
+  @Type(() => Number) // Chuyển đổi từ string sang number
   price: number;
 
   @IsNotEmpty()
   @IsNumber()
+  @Type(() => Number) // Chuyển đổi từ string sang number
   quantity: number;
 
   @IsNotEmpty()
