@@ -1,25 +1,31 @@
-import { IsString, IsNumber, IsArray, IsOptional, Min, Max } from 'class-validator';
+
+
+import { Allow, IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class CreateProductDto {
+  @IsNotEmpty()
   @IsString()
-  product_name: string;
+  id: string;
+  @IsNotEmpty()
+  @IsString()
+  name: string;
 
+  @IsNotEmpty()
   @IsString()
   description: string;
 
+  @IsNotEmpty()
   @IsNumber()
-  @Min(0) // Giá trị nhỏ nhất là 0
-  @Max(99999999.99) // Giới hạn cho price
   price: number;
 
+  @IsNotEmpty()
   @IsNumber()
   quantity: number;
 
-  @IsArray()
-  @IsOptional()
-  images?: string[];
+  @IsNotEmpty()
+  @IsString()
+  status: string;
 
-  @IsArray()
-  @IsOptional()
-  files?: string[];
+  @Allow() // Bỏ qua kiểm tra cho thuộc tính này
+  files: Express.Multer.File[];
 }

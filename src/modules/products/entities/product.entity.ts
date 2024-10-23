@@ -1,34 +1,22 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, PrimaryColumn } from 'typeorm';
 
 @Entity()
 export class Product {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryColumn()
+  id: string;
 
   @Column()
-  product_name: string;
+  transactionHash: string;
 
-  @Column('text')
-  description: string;
+  @CreateDateColumn()
+  create_at: Date;
 
-  @Column('decimal', { precision: 10, scale: 2 })
-  price: number;
-
-  @Column()
-  quantity: number;
+  @UpdateDateColumn()
+  update_at: Date;
 
   @Column()
-  status: string;
+  qrcode: string;
 
-  @Column('simple-array')
-  images: string[];
-
-  @Column('simple-array')
-  files: string[];
-
-  @Column({ nullable: true }) // Cho phép null nếu chưa có dữ liệu IPFS
-  ipfsUrl: string;
-
-  @Column({ nullable: true }) // Block hash có thể null ban đầu
-  blockHash: string;
+  @Column({ default: false })
+  isDeleted: boolean;
 }

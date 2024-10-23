@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -16,6 +15,8 @@ import { MulterModule } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { Product } from './modules/products/entities/product.entity';
+import { SmartContractModule } from './modules/blockchain/ProductContract/smartcontract.module';
+
 
 
 
@@ -77,10 +78,11 @@ import { Product } from './modules/products/entities/product.entity';
     UsersModule,
     AuthModule,
     ProductsModule,
+    SmartContractModule,
    
    
   ],
-  controllers: [AppController],
+  controllers: [],
   providers: [
     AppService,  
     {
