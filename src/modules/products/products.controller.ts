@@ -20,6 +20,7 @@ import { Public } from 'src/utils/decorator';
 import { ConfigService } from '@nestjs/config';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ProductSC } from '../blockchain/interfaces/productsc';
+import { Product } from './entities/product.entity';
 
 
 @Controller('products')
@@ -40,7 +41,7 @@ export class ProductController {
 
   @Public()
    // Định nghĩa route để lấy thông tin sản phẩm theo ID
-   @Get(':id') // Endpoint sẽ nhận ID sản phẩm từ URL
+   @Get('home/products/:id') // Endpoint sẽ nhận ID sản phẩm từ URL
    async getProduct(@Param('id') id: string): Promise<ProductSC> {
        const product = await this.productService.getProduct(id);
        
@@ -51,12 +52,34 @@ export class ProductController {
        
        return product; // Trả về sản phẩm nếu tìm thấy
    }
+   @Public()
+   @Get('home/products')
+  async getAllProducts() {
+    try {
+      const result = await this.productService.getAllProducts(); // Gọi service để lấy dữ liệu
+      return result; // Trả về kết quả từ service
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message, // Trả về lỗi nếu có
+      };
+    }
+  }
+
+
+
+  @Public()
+   // API lấy tất cả sản phẩm
+   @Get('dashboard/products')
+   async findAll(): Promise<Product[]> {
+     return await this.productService.findAll(); // Gọi service để lấy tất cả sản phẩm
+   }
 
 
  
 
   @Public()
-  @Get(':id')
+  @Get('dashboard/products/:id')
   findOne(@Param('id', ParseIntPipe) id: string) {
     return this.productService.findOne(id);
   }

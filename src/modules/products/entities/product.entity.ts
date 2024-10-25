@@ -14,8 +14,8 @@ export class Product {
   @UpdateDateColumn()
   update_at: Date;
 
-  @Column()
-  qrcode: string;
+  @Column("text", { array: true }) // Đổi kiểu dữ liệu thành JSON để lưu mảng
+  qrcode: string[]; // Lưu trữ tập hợp QR codes dưới dạng mảng
 
   @Column({ default: false })
   isDeleted: boolean;

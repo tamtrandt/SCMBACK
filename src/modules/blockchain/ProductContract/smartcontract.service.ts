@@ -39,9 +39,11 @@ export class SmartContractService {
         price: number,
         quantity: number,
         status: string,
-        ipfsUrl: string
+        cids: string[] // Cập nhật từ ipfsUrl thành mảng CIDs
     ): Promise<string> {
-        const tx = await this.contract.addProduct(id, name, description, price, quantity, status, ipfsUrl);
+       // Chuyển mảng CIDs thành chuỗi JSON để lưu trên blockchain
+  //const cidString = JSON.stringify(cids);
+        const tx = await this.contract.addProduct(id, name, description, price, quantity, status, cids);
         const receipt = await tx.wait(); // Chờ giao dịch được xác nhận
     
         // Trả về transaction hash
@@ -50,8 +52,9 @@ export class SmartContractService {
     }
 
     // Cập nhật thông tin sản phẩm
-    async updateProduct(id: number, name: string, description: string, price: number, quantity: number, status: string, ipfsUrl: string): Promise<void> {
-        const tx = await this.contract.updateProduct(id, name, description, price, quantity, status, ipfsUrl);
+    async updateProduct(id: number, name: string, description: string, price: number, quantity: number, status: string, cids: string[]): Promise<void> {
+      //const cidString = JSON.stringify(cids);
+      const tx = await this.contract.updateProduct(id, name, description, price, quantity, status, cids);
         const receipt = await tx.wait();
 
         console.log(`Product updated with transaction hash: ${receipt.transactionHash}`);
@@ -60,6 +63,8 @@ export class SmartContractService {
     // Lấy thông tin sản phẩm
     async getProduct(id: string): Promise<ProductSC> {
         const productData = await this.contract.getProduct(id);
+        // Chuyển đổi cidString JSON trở lại mảng CIDs
+  //const cids = JSON.parse(productData[5]);
         
         return {
             id,
@@ -68,9 +73,19 @@ export class SmartContractService {
             price: productData[2].toNumber(),
             quantity: productData[3].toNumber(),
             status: productData[4],
-            ipfsUrl: productData[5],
+            cids: productData[5],
             //blockHash: '' // Bạn có thể cập nhật giá trị này nếu lưu trữ block hash từ giao dịch khi thêm/cập nhật
         };
     }
+
+    // Hàm gọi đến smart contract để lấy tất cả sản phẩm
+  async getAllProducts(): Promise<any> {
+    try {
+      const products = await this.contract.getAllProducts(); // Gọi hàm trên smart contract
+      return products;
+    } catch (error) {
+      throw new Error(`Failed to get products: ${error.message}`);
+    }
+  }
 
 }

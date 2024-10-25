@@ -34,13 +34,24 @@ export class ProductService {
   ): Promise<any> {
     //Generate ID
     const generatedId = uuidv4();
-    // Upload nhiều files lên Thirdweb IPFS dưới dạng một folder
-    const ipfsFolderCid = await this.storage.upload(files);
-    //const ipfsFolderCid = 'QmNMbC38Pauhp6QeZNrT4Kz1AFfjdLiZiCXZgJZrPRNWqK';
+ // Array to store CIDs and QR codes for each file
+ const cids = [];
+ const qrCodes = [];
 
-    const ipfsFolderUrl = this.storage.resolveScheme(ipfsFolderCid); // Lấy URL của folder
-    //Tao QR tu URL
-    const qrCodeDataUrl = await QRCode.toDataURL(ipfsFolderUrl);
+ // Upload each file individually to IPFS and generate QR code for each CID
+ for (const file of files) {
+    // Tải tệp lên IPFS và nhận CID
+    const cid = await this.storage.upload(file); 
+    cids.push(cid);
+    // Lấy URL từ CID
+    const { url } = await this.storage.download(cid); 
+    console.log('URL:', url); // Đây là URL của tệp được tải lên
+
+    // Tạo mã QR cho URL và lưu dưới dạng Data URL
+    const qrCode = await QRCode.toDataURL(url); 
+    qrCodes.push(qrCode);
+   
+ }
 
    
     // Gọi smart contract để lưu sản phẩm và nhận về block hash
@@ -51,14 +62,14 @@ export class ProductService {
       createProductDto.price,
       createProductDto.quantity,
       createProductDto.status,
-      ipfsFolderCid // CID của folder chứa các files trên IPFS
+      cids, // CID của folder chứa các files trên IPFS
   );
 
   // Lưu thông tin cơ bản về sản phẩm vào PostgreSQL, không lưu files
   const newProduct = this.productRepository.create({
       id: generatedId,
       transactionHash: transactionkHash,
-      qrcode: qrCodeDataUrl,
+      qrcode: qrCodes,
       isDeleted: false, 
       create_at: new Date(),
       update_at: new Date(),
@@ -72,13 +83,23 @@ export class ProductService {
    // Gọi hàm getProduct từ SmartContractService
    async getProduct(id: string): Promise<ProductSC> {
     return this.smartContractService.getProduct(id);
-}
-  // // Lấy thông tin sản phẩm từ database
-  // async getProduct(id: string): Promise<Product> {
-  //   // Lấy sản phẩm từ PostgreSQL
-  //   return this.productRepository.findOne({ where: { id } });
-  // }
+   }
+  
 
+async getAllProducts() {
+  try {
+    const products = await this.smartContractService.getAllProducts();
+    return {
+      success: true,
+      data: products,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
+}
 
 
   
@@ -89,6 +110,13 @@ export class ProductService {
     }
     return product;
   }
+
+// Hàm tìm kiếm tất cả sản phẩm
+async findAll(): Promise<Product[]> {
+  return await this.productRepository.find(); // Trả về tất cả sản phẩm từ database
+}
+
+
 
   async update(id: string, updateProductDto: UpdateProductDto): Promise<Product> {
     await this.findOne(id); // Kiểm tra sản phẩm tồn tại

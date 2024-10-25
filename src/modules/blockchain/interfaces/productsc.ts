@@ -5,6 +5,6 @@ export interface ProductSC {
     price: number;
     quantity: number;
     status: string;
-    ipfsUrl: string;
+    cids: string[]
     //blockHash: string; // Để lưu trữ mã hash của block chứa thông tin giao dịch
 }
