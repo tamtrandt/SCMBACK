@@ -11,6 +11,7 @@ export class UsersController {
   constructor(private readonly userService: UsersService) {}
 
 
+  @Public()
   @Post()
   async create(@Body() createUserDto: CreateUserDto) {
     try {
@@ -21,13 +22,13 @@ export class UsersController {
     }
   }
 
-
+  @Public()
   @Get()
   async findAll() {
     return await this.userService.findAll();
   }
 
-
+  @Public()
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const user = await this.userService.findOne(id);
@@ -37,7 +38,7 @@ export class UsersController {
     return user;
   }
 
-
+  @Public()
   @Put(':id')
   async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     const updatedUser = await this.userService.updateUser(id, updateUserDto);
@@ -47,7 +48,7 @@ export class UsersController {
     return { message: 'User updated successfully', updatedUser };
   }
 
-  
+  @Public()
 @Delete(':id')
 async remove(@Param('id') id: string) {
   const isDeleted = await this.userService.removeUser(id); 
@@ -57,17 +58,5 @@ async remove(@Param('id') id: string) {
   return { message: 'User deleted successfully' };
 }
 
-
-@Get('profile')
-getProfile(@Req() req: Request) {
-  
-  const userInfo = req.cookies.userInfo;
-
- 
-  if (userInfo) {
-    return JSON.parse(userInfo);
-  }
-  return { message: 'User not logged in' };
-}
 
 }

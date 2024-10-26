@@ -17,7 +17,7 @@ export class CreateUserDto {
   password: string;
 
   @IsNotEmpty({ message: 'Phone number is required' })
-  @IsPhoneNumber(null, { message: 'Invalid phone number' })
+  @IsPhoneNumber('VN', { message: 'Invalid phone number' })
   phone: string;
 
   @IsOptional() 

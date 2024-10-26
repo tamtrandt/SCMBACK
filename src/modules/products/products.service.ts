@@ -55,6 +55,7 @@ export class ProductService {
 
    
     // Gọi smart contract để lưu sản phẩm và nhận về block hash
+   
     const transactionkHash = await this.smartContractService.addProduct(
       generatedId,
       createProductDto.name,

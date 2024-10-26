@@ -17,8 +17,8 @@ export class RegisterUserDto {
   @MinLength(6, { message: 'Password must be at least 6 characters long' })
   password: string;
 
-  @IsPhoneNumber('VN', { message: 'Invalid phone number' })
   @IsNotEmpty({ message: 'Phone number is required' })
+  @IsPhoneNumber('VN', { message: 'Invalid phone number' })
   phone: string;
 
   @IsString()
