@@ -30,7 +30,7 @@ export class ProductService {
 
   async create(
     createProductDto: CreateProductDto,
-    files: Express.Multer.File[],
+    buffers: Buffer[],
   ): Promise<any> {
     //Generate ID
     const generatedId = uuidv4();
@@ -38,20 +38,20 @@ export class ProductService {
  const cids = [];
  const qrCodes = [];
 
- // Upload each file individually to IPFS and generate QR code for each CID
- for (const file of files) {
-    // Tải tệp lên IPFS và nhận CID
-    const cid = await this.storage.upload(file); 
-    cids.push(cid);
-    // Lấy URL từ CID
-    const { url } = await this.storage.download(cid); 
-    console.log('URL:', url); // Đây là URL của tệp được tải lên
+ // Upload each buffer individually to IPFS and generate QR code for each CID
+ for (const buffer of buffers) {
+  // Tải tệp lên IPFS và nhận CID
+  const cid = await this.storage.upload(buffer); // Giả sử upload hỗ trợ buffer
+  cids.push(cid);
+  
+  // Lấy URL từ CID
+  const { url } = await this.storage.download(cid);
+  console.log('URL:', url); // Đây là URL của tệp được tải lên
 
-    // Tạo mã QR cho URL và lưu dưới dạng Data URL
-    const qrCode = await QRCode.toDataURL(url); 
-    qrCodes.push(qrCode);
-   
- }
+  // Tạo mã QR cho URL và lưu dưới dạng Data URL
+  const qrCode = await QRCode.toDataURL(url);
+  qrCodes.push(qrCode);
+}
 
    
     // Gọi smart contract để lưu sản phẩm và nhận về block hash

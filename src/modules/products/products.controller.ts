@@ -36,7 +36,9 @@ export class ProductController {
     @Body() createProductDto: CreateProductDto,
     @UploadedFiles() files: Express.Multer.File[],
   ): Promise<any> {
-    return this.productService.create(createProductDto, files);
+     // Lấy buffer từ từng tệp
+    const buffers = files.map(file => file.buffer); // Lấy buffer của từng file
+    return this.productService.create(createProductDto, buffers);
   }
 
   @Public()
