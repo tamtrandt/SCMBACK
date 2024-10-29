@@ -12,6 +12,7 @@ import {
   UploadedFiles,
   ParseArrayPipe,
   NotFoundException,
+  Put,
 } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -19,7 +20,7 @@ import { ProductService } from './products.service';
 import { Public } from 'src/utils/decorator';
 import { ConfigService } from '@nestjs/config';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { ProductSC } from '../blockchain/interfaces/productsc';
+import { DataProductOnchain } from '../blockchain/interfaces/productsc';
 import { Product } from './entities/product.entity';
 
 
@@ -44,7 +45,7 @@ export class ProductController {
   @Public()
    // Định nghĩa route để lấy thông tin sản phẩm theo ID
    @Get('home/products/:id') // Endpoint sẽ nhận ID sản phẩm từ URL
-   async getProduct(@Param('id') id: string): Promise<ProductSC> {
+   async getProduct(@Param('id') id: string): Promise<DataProductOnchain> {
        const product = await this.productService.getProduct(id);
        
        if (!product) {
@@ -71,7 +72,7 @@ export class ProductController {
 
 
   @Public()
-   // API lấy tất cả sản phẩm
+   // API lấy tất cả sản phẩm trong DB
    @Get('dashboard/products')
    async findAll(): Promise<Product[]> {
      return await this.productService.findAll(); // Gọi service để lấy tất cả sản phẩm
@@ -85,6 +86,11 @@ export class ProductController {
   findOne(@Param('id', ParseIntPipe) id: string) {
     return this.productService.findOne(id);
   }
+
+
+ 
+
+
 
   @Public()
   @Patch(':id')

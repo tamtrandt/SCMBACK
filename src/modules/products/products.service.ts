@@ -8,7 +8,7 @@ import { ThirdwebStorage } from '@thirdweb-dev/storage';
 import { ConfigService } from '@nestjs/config';
 import * as QRCode from 'qrcode';
 import { v4 as uuidv4 } from 'uuid'; 
-import { ProductSC } from '../blockchain/interfaces/productsc';
+import { DataProductOnchain } from '../blockchain/interfaces/productsc';
 import { SmartContractService } from '../blockchain/ProductContract/smartcontract.service';
 
 
@@ -53,23 +53,26 @@ export class ProductService {
   qrCodes.push(qrCode);
 }
 
+   const priceString = this.priceToString(createProductDto.price);
    
-    // Gọi smart contract để lưu sản phẩm và nhận về block hash
-   
-    const transactionkHash = await this.smartContractService.addProduct(
-      generatedId,
-      createProductDto.name,
-      createProductDto.description,
-      createProductDto.price,
-      createProductDto.quantity,
-      createProductDto.status,
-      cids, // CID của folder chứa các files trên IPFS
+   // Call smart contract to save the product and get back the block hash
+   const transactionHash = await this.smartContractService.addProduct(
+    generatedId,
+    createProductDto.name,
+    createProductDto.description,
+    priceString,
+    createProductDto.quantity,
+    createProductDto.brand,
+    createProductDto.category, // Thêm brand từ DTO
+    createProductDto.size, // Thêm size từ DTO
+   'available',
+    cids, // CIDs of the files on IPFS
   );
 
   // Lưu thông tin cơ bản về sản phẩm vào PostgreSQL, không lưu files
   const newProduct = this.productRepository.create({
       id: generatedId,
-      transactionHash: transactionkHash,
+      transactionHash: transactionHash,
       qrcode: qrCodes,
       isDeleted: false, 
       create_at: new Date(),
@@ -82,11 +85,31 @@ export class ProductService {
 
 
    // Gọi hàm getProduct từ SmartContractService
-   async getProduct(id: string): Promise<ProductSC> {
+   async getProduct(id: string): Promise<DataProductOnchain> {
     return this.smartContractService.getProduct(id);
    }
-  
+ // Helper function to convert price to string format
+ private priceToString(price: number): string {
+  return price.toFixed(2); // Convert to string with two decimal places
+}
 
+//Update On Chain
+async updateProduct(
+  id: string,
+  name: string,
+  description: string,
+  price: number,
+  quantity: number,
+  brand: string,
+  category: string,
+  size: string,
+  status: string,
+  cids: string[]
+): Promise<void> {
+  await this.smartContractService.updateProduct(id, name, description, price, quantity, brand, category, size, status, cids);
+}
+  
+//Get All On Chain
 async getAllProducts() {
   try {
     const products = await this.smartContractService.getAllProducts();

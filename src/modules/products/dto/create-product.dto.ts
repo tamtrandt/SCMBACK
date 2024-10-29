@@ -23,10 +23,16 @@ export class CreateProductDto {
   @IsNumber()
   @Type(() => Number) // Chuyển đổi từ string sang number
   quantity: number;
-
   @IsNotEmpty()
   @IsString()
-  status: string;
+  brand: string;
+  @IsNotEmpty()
+  @IsString()
+  category: string;
+  @IsNotEmpty()
+  @IsString()
+  size: string;
+
 
   @Allow() // Bỏ qua kiểm tra cho thuộc tính này
   files: Express.Multer.File[];

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ethers } from 'ethers';
 import * as ProductContract    from '../abis/ProductRegistry.json';
-import { ProductSC } from '../interfaces/productsc';
+import { DataProductOnchain } from '../interfaces/productsc';
 
 
 
@@ -33,50 +33,83 @@ export class SmartContractService {
 
 
     async addProduct(
-        id: string, // Sử dụng string cho ID UUID
-        name: string,
-        description: string,
-        price: number,
-        quantity: number,
-        status: string,
-        cids: string[] // Cập nhật từ ipfsUrl thành mảng CIDs
-    ): Promise<string> {
-       // Chuyển mảng CIDs thành chuỗi JSON để lưu trên blockchain
-  //const cidString = JSON.stringify(cids);
-        const tx = await this.contract.addProduct(id, name, description, price, quantity, status, cids);
-        const receipt = await tx.wait(); // Chờ giao dịch được xác nhận
-    
-        // Trả về transaction hash
-        console.log(`Product added with transaction hash: ${receipt.transactionHash}`);
-        return receipt.transactionHash; // Trả về transaction hash
-    }
+      id: string, // Sử dụng string cho ID UUID
+      name: string,
+      description: string,
+      price: string, // Thay đổi giá trị từ number sang string
+      quantity: number,
+      brand: string, // Thêm brand vào tham số
+      category: string, // Thêm category vào tham số
+      size: string, // Thêm size vào tham số
+      status: string,
+      cids: string[] // Cập nhật từ ipfsUrl thành mảng CIDs
+  ): Promise<string> {
+      // Chuyển mảng CIDs thành chuỗi JSON để lưu trên blockchain (nếu cần)
+      // const cidString = JSON.stringify(cids); // Nếu smart contract của bạn yêu cầu chuỗi
 
-    // Cập nhật thông tin sản phẩm
-    async updateProduct(id: number, name: string, description: string, price: number, quantity: number, status: string, cids: string[]): Promise<void> {
-      //const cidString = JSON.stringify(cids);
-      const tx = await this.contract.updateProduct(id, name, description, price, quantity, status, cids);
-        const receipt = await tx.wait();
+      // Gọi phương thức addProduct trên smart contract
+      const tx = await this.contract.addProduct(
+          id,
+          name,
+          description,
+          price, // Truyền giá trị dạng string
+          quantity,
+          brand, // Thêm brand vào tham số truyền
+          category, // Thêm category vào tham số truyền
+          size, // Thêm size vào tham số truyền
+          status,
+          cids // Truyền mảng CIDs vào tham số
+      );
 
-        console.log(`Product updated with transaction hash: ${receipt.transactionHash}`);
-    }
+      const receipt = await tx.wait(); // Chờ giao dịch được xác nhận
 
-    // Lấy thông tin sản phẩm
-    async getProduct(id: string): Promise<ProductSC> {
-        const productData = await this.contract.getProduct(id);
-        // Chuyển đổi cidString JSON trở lại mảng CIDs
-  //const cids = JSON.parse(productData[5]);
-        
-        return {
-            id,
-            name: productData[0],
-            description: productData[1],
-            price: productData[2].toNumber(),
-            quantity: productData[3].toNumber(),
-            status: productData[4],
-            cids: productData[5],
-            //blockHash: '' // Bạn có thể cập nhật giá trị này nếu lưu trữ block hash từ giao dịch khi thêm/cập nhật
-        };
-    }
+      // Trả về transaction hash
+      console.log(`Product added with transaction hash: ${receipt.transactionHash}`);
+      return receipt.transactionHash; // Trả về transaction hash
+  }
+
+
+  async updateProduct(
+    id: string, // Sử dụng string cho ID UUID
+      name: string,
+      description: string,
+      price: number, // Thay đổi giá trị từ number sang string
+      quantity: number,
+      brand: string, // Thêm brand vào tham số
+      category: string, // Thêm category vào tham số
+      size: string, // Thêm size vào tham số
+      status: string,
+      cids: string[] 
+): Promise<void> {
+    // Chuyển đổi price thành chuỗi
+    const priceString = price.toFixed(2); // Giữ lại 2 chữ số thập phân, có thể tùy chỉnh
+
+    const tx = await this.contract.updateProduct(id, name, description, priceString, quantity,brand,category,size, status, cids);
+    const receipt = await tx.wait();
+
+    console.log(`Product updated with transaction hash: ${receipt.transactionHash}`);
+}
+
+    async getProduct(id: string): Promise<DataProductOnchain> {
+      const productData = await this.contract.getProduct(id);
+      
+      // Nếu cids là chuỗi JSON, bạn có thể cần parse nó (nếu cần)
+      // const cids = JSON.parse(productData[5]); 
+  
+      return {
+          id,
+          name: productData[0],
+          description: productData[1],
+          price: parseFloat(productData[2]), // Chuyển đổi giá thành số
+          quantity: productData[3].toNumber(),
+          brand: productData[4], // Giả định rằng brand ở vị trí thứ 6
+          category: productData[5], // Giả định rằng category ở vị trí thứ 7
+          size: productData[6], // Giả định rằng size ở vị trí thứ 8
+          status: productData[7],
+          cids: productData[8], 
+          creater: productData[9],
+      };
+  } 
 
     // Hàm gọi đến smart contract để lấy tất cả sản phẩm
   async getAllProducts(): Promise<any> {
