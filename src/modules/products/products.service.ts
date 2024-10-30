@@ -28,6 +28,11 @@ export class ProductService {
   this.storage = new ThirdwebStorage({ secretKey: apiKey });
   }
 
+   // Helper function to convert price to string format
+ private priceToString(price: number): string {
+  return price.toFixed(2); // Convert to string with two decimal places
+}
+
   async create(
     createProductDto: CreateProductDto,
     buffers: Buffer[],
@@ -85,14 +90,9 @@ export class ProductService {
 
 
    // Gọi hàm getProduct từ SmartContractService
-   async getProduct(id: string): Promise<DataProductOnchain> {
+   async getProductOnChain(id: string): Promise<DataProductOnchain> {
     return this.smartContractService.getProduct(id);
    }
- // Helper function to convert price to string format
- private priceToString(price: number): string {
-  return price.toFixed(2); // Convert to string with two decimal places
-}
-
 //Update On Chain
 async updateProduct(
   id: string,
@@ -110,7 +110,7 @@ async updateProduct(
 }
   
 //Get All On Chain
-async getAllProducts() {
+async getAllProductOnChain() {
   try {
     const products = await this.smartContractService.getAllProducts();
     return {

@@ -44,9 +44,9 @@ export class ProductController {
 
   @Public()
    // Định nghĩa route để lấy thông tin sản phẩm theo ID
-   @Get('home/products/:id') // Endpoint sẽ nhận ID sản phẩm từ URL
+   @Get('onchain/:id') // Endpoint sẽ nhận ID sản phẩm từ URL
    async getProduct(@Param('id') id: string): Promise<DataProductOnchain> {
-       const product = await this.productService.getProduct(id);
+       const product = await this.productService.getProductOnChain(id);
        
        if (!product) {
            // Nếu không tìm thấy sản phẩm, ném lỗi 404
@@ -56,10 +56,10 @@ export class ProductController {
        return product; // Trả về sản phẩm nếu tìm thấy
    }
    @Public()
-   @Get('home/products')
+   @Get('onchain/all')
   async getAllProducts() {
     try {
-      const result = await this.productService.getAllProducts(); // Gọi service để lấy dữ liệu
+      const result = await this.productService.getAllProductOnChain(); // Gọi service để lấy dữ liệu
       return result; // Trả về kết quả từ service
     } catch (error) {
       return {
@@ -73,16 +73,12 @@ export class ProductController {
 
   @Public()
    // API lấy tất cả sản phẩm trong DB
-   @Get('dashboard/products')
+   @Get('offchain/all')
    async findAll(): Promise<Product[]> {
      return await this.productService.findAll(); // Gọi service để lấy tất cả sản phẩm
    }
-
-
- 
-
   @Public()
-  @Get('dashboard/products/:id')
+  @Get('offchain/:id')
   findOne(@Param('id', ParseIntPipe) id: string) {
     return this.productService.findOne(id);
   }
