@@ -16,7 +16,7 @@ async function bootstrap() {
    // Enable CORS
    app.use(cors({
     origin: 'http://localhost:3000', // Thay thế với domain của bạn nếu cần
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
    }));

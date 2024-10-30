@@ -5,7 +5,7 @@ export class User {
   @PrimaryGeneratedColumn('uuid')
   user_id: string;
 
-  @Column()
+  @Column({ nullable: true })
   username: string;
 
   @Column({ unique: true })
@@ -14,10 +14,10 @@ export class User {
   @Column()
   password: string;
 
-  @Column()
+  @Column({ nullable: true })
   phone: string;
 
-  @Column()
+  @Column({ nullable: true })
   address: string;
 
   @Column({ default: 'customer' }) 

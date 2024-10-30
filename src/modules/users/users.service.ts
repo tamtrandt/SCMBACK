@@ -33,10 +33,18 @@ export class UsersService {
     
     const hashedPassword = await hashPassword(createUserDto.password);
 
+    let isactive: boolean;
+    if (createUserDto.role === 'admin') {
+        isactive = true;
+    } else if (createUserDto.role === 'customer') {
+        isactive = false;
+    }
+
     
     const user = this.userRepository.create({
       ...createUserDto,
       password: hashedPassword,  
+      isactive
     });
 
     

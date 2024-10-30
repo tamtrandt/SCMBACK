@@ -1,22 +1,22 @@
 import { IsEmail, IsNotEmpty, IsString, MinLength, Matches, IsPhoneNumber, IsOptional } from 'class-validator';
 
 export class CreateUserDto {
-  @IsNotEmpty({ message: 'Username is required' })
+  @IsOptional() 
   @IsString({ message: 'Username must be a string' })
   username: string;
 
-  @IsNotEmpty({ message: 'Email is required' })
+  @IsOptional() 
   @IsEmail({}, { message: 'Invalid email format' })
   email: string;
 
-  @IsNotEmpty({ message: 'Password is required' })
+  @IsOptional() 
   @MinLength(8, { message: 'Password must be at least 8 characters long' })
   @Matches(/(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}/, {
     message: 'Password must contain at least one letter, one number, and one special character',
   })
   password: string;
 
-  @IsNotEmpty({ message: 'Phone number is required' })
+  @IsOptional() 
   @IsPhoneNumber('VN', { message: 'Invalid phone number' })
   phone: string;
 

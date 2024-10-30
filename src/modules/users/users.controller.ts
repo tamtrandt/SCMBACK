@@ -12,7 +12,7 @@ export class UsersController {
 
 
   @Public()
-  @Post()
+  @Post('create')
   async create(@Body() createUserDto: CreateUserDto) {
     try {
       const user = await this.userService.createUser(createUserDto);
@@ -47,7 +47,6 @@ export class UsersController {
     }
     return { message: 'User updated successfully', updatedUser };
   }
-
   @Public()
 @Delete(':id')
 async remove(@Param('id') id: string) {
