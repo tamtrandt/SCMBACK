@@ -8,6 +8,7 @@ export interface DataProductOnchain {
     category: string; // Danh mục sản phẩm
     size: string; // Kích thước sản phẩm
     status: string; // Trạng thái sản phẩm
+    store: string;
     cids: string[]; // Mảng CIDs của các tệp trên IPFS
     creater: string;
 }

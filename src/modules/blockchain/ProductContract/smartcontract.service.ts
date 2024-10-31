@@ -42,6 +42,7 @@ export class SmartContractService {
       category: string, // Thêm category vào tham số
       size: string, // Thêm size vào tham số
       status: string,
+      store:string,
       cids: string[] // Cập nhật từ ipfsUrl thành mảng CIDs
   ): Promise<string> {
       // Chuyển mảng CIDs thành chuỗi JSON để lưu trên blockchain (nếu cần)
@@ -58,6 +59,7 @@ export class SmartContractService {
           category, // Thêm category vào tham số truyền
           size, // Thêm size vào tham số truyền
           status,
+          store,
           cids // Truyền mảng CIDs vào tham số
       );
 
@@ -79,12 +81,13 @@ export class SmartContractService {
       category: string, // Thêm category vào tham số
       size: string, // Thêm size vào tham số
       status: string,
+      store:string,
       cids: string[] 
 ): Promise<void> {
     // Chuyển đổi price thành chuỗi
     const priceString = price.toFixed(2); // Giữ lại 2 chữ số thập phân, có thể tùy chỉnh
 
-    const tx = await this.contract.updateProduct(id, name, description, priceString, quantity,brand,category,size, status, cids);
+    const tx = await this.contract.updateProduct(id, name, description, priceString, quantity,brand,category,size, status,store, cids);
     const receipt = await tx.wait();
 
     console.log(`Product updated with transaction hash: ${receipt.transactionHash}`);
@@ -106,8 +109,9 @@ export class SmartContractService {
           category: productData[5], // Giả định rằng category ở vị trí thứ 7
           size: productData[6], // Giả định rằng size ở vị trí thứ 8
           status: productData[7],
-          cids: productData[8], 
-          creater: productData[9],
+          store: productData[8],
+          cids: productData[9], 
+          creater: productData[10],
       };
   } 
 

@@ -56,7 +56,7 @@ export class ProductController {
        return product; // Trả về sản phẩm nếu tìm thấy
    }
    @Public()
-   @Get('onchain/all')
+   @Get('onchainall/all')
   async getAllProducts() {
     try {
       const result = await this.productService.getAllProductOnChain(); // Gọi service để lấy dữ liệu
@@ -72,14 +72,18 @@ export class ProductController {
 
 
   @Public()
-   // API lấy tất cả sản phẩm trong DB
-   @Get('offchain/all')
-   async findAll(): Promise<Product[]> {
-     return await this.productService.findAll(); // Gọi service để lấy tất cả sản phẩm
-   }
+  // API lấy tổng số sản phẩm và danh sách product_id trong DB
+  @Get('offchainall/all')
+  async findAll(): Promise<{ count: number; product_ids: string[] }> {
+    return await this.productService.findAll(); // Gọi service để lấy số lượng và danh sách ID sản phẩm
+  }
+
+
+
+
   @Public()
   @Get('offchain/:id')
-  findOne(@Param('id', ParseIntPipe) id: string) {
+  findOne(@Param('id') id: string) {
     return this.productService.findOne(id);
   }
 

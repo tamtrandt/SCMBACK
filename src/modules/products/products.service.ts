@@ -71,6 +71,7 @@ export class ProductService {
     createProductDto.category, // Thêm brand từ DTO
     createProductDto.size, // Thêm size từ DTO
    'available',
+   'onchain',
     cids, // CIDs of the files on IPFS
   );
 
@@ -80,6 +81,7 @@ export class ProductService {
       transactionHash: transactionHash,
       qrcode: qrCodes,
       isDeleted: false, 
+      store: "offchain",
       create_at: new Date(),
       update_at: new Date(),
       
@@ -104,9 +106,10 @@ async updateProduct(
   category: string,
   size: string,
   status: string,
+  store:string,
   cids: string[]
 ): Promise<void> {
-  await this.smartContractService.updateProduct(id, name, description, price, quantity, brand, category, size, status, cids);
+  await this.smartContractService.updateProduct(id, name, description, price, quantity, brand, category, size, status,store, cids);
 }
   
 //Get All On Chain
@@ -136,8 +139,13 @@ async getAllProductOnChain() {
   }
 
 // Hàm tìm kiếm tất cả sản phẩm
-async findAll(): Promise<Product[]> {
-  return await this.productRepository.find(); // Trả về tất cả sản phẩm từ database
+async findAll(): Promise<{ count: number; product_ids: string[] }> {
+  const products = await this.productRepository.find(); // Lấy tất cả sản phẩm từ database
+  
+  const count = products.length; // Đếm tổng số sản phẩm
+  const product_ids = products.map(product => product.id); // Lấy danh sách product_id từ các sản phẩm
+
+  return { count, product_ids }; // Trả về đối tượng bao gồm count và mảng product_ids
 }
 
 
