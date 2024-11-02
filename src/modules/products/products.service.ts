@@ -35,22 +35,45 @@ export class ProductService {
 
   async create(
     createProductDto: CreateProductDto,
-    buffers: Buffer[],
+    // fileBuffers: Buffer[],
+    // imageBuffers: Buffer[],
+    files
+
   ): Promise<any> {
     //Generate ID
     const generatedId = uuidv4();
  // Array to store CIDs and QR codes for each file
- const cids = [];
+ const filecids = [];
+ const imagecids = [];
  const qrCodes = [];
+ const images = files.filter(file => file.mimetype.startsWith('image/'));
+ const otherfiles = files.filter(file => !file.mimetype.startsWith('image/'));
+ const imageBuffers = images.map(file => file.buffer);
+const fileBuffers = otherfiles.map(image => image.buffer); // Lấy buffer của từng file
+
 
  // Upload each buffer individually to IPFS and generate QR code for each CID
- for (const buffer of buffers) {
+ for (const buffer of fileBuffers) {
   // Tải tệp lên IPFS và nhận CID
-  const cid = await this.storage.upload(buffer); // Giả sử upload hỗ trợ buffer
-  cids.push(cid);
+  const filecid = await this.storage.upload(buffer); // Giả sử upload hỗ trợ buffer
+  filecids.push(filecid);
   
   // Lấy URL từ CID
-  const { url } = await this.storage.download(cid);
+  const { url } = await this.storage.download(filecid);
+  console.log('URL:', url); // Đây là URL của tệp được tải lên
+
+  // Tạo mã QR cho URL và lưu dưới dạng Data URL
+  const qrCode = await QRCode.toDataURL(url);
+  qrCodes.push(qrCode);
+}
+// Upload each buffer individually to IPFS and generate QR code for each CID
+for (const buffer of imageBuffers) {
+  // Tải tệp lên IPFS và nhận CID
+  const imagecid = await this.storage.upload(buffer); // Giả sử upload hỗ trợ buffer
+  imagecids.push(imagecid);
+  
+  // Lấy URL từ CID
+  const { url } = await this.storage.download(imagecid);
   console.log('URL:', url); // Đây là URL của tệp được tải lên
 
   // Tạo mã QR cho URL và lưu dưới dạng Data URL
@@ -71,19 +94,17 @@ export class ProductService {
     createProductDto.category, // Thêm brand từ DTO
     createProductDto.size, // Thêm size từ DTO
    'available',
-   'onchain',
-    cids, // CIDs of the files on IPFS
+    imagecids,
+    filecids, // CIDs of the files on IPFS
   );
 
   // Lưu thông tin cơ bản về sản phẩm vào PostgreSQL, không lưu files
   const newProduct = this.productRepository.create({
       id: generatedId,
       transactionHash: transactionHash,
-      qrcode: qrCodes,
-      isDeleted: false, 
-      store: "offchain",
       create_at: new Date(),
       update_at: new Date(),
+      qrcode: qrCodes,
       
   });
 
@@ -97,7 +118,7 @@ export class ProductService {
    }
 //Update On Chain
 async updateProduct(
-  id: string,
+  id: string, // ID sản phẩm
   name: string,
   description: string,
   price: number,
@@ -106,25 +127,44 @@ async updateProduct(
   category: string,
   size: string,
   status: string,
-  store:string,
-  cids: string[]
-): Promise<void> {
-  await this.smartContractService.updateProduct(id, name, description, price, quantity, brand, category, size, status,store, cids);
-}
   
-//Get All On Chain
+  imagecids: string[],
+  filecids: string[]
+): Promise<void> {
+  try {
+      await this.smartContractService.updateProduct(
+          id,
+          name,
+          description,
+          price,
+          quantity,
+          brand,
+          category,
+          size,
+          status,
+        
+          imagecids,
+          filecids
+
+      );
+      console.log('Product updated successfully');
+  } catch (error) {
+      console.error('Failed to update product:', error);
+      throw error; // Hoặc xử lý lỗi theo cách khác tùy ý
+  }
+}
 async getAllProductOnChain() {
   try {
-    const products = await this.smartContractService.getAllProducts();
-    return {
-      success: true,
-      data: products,
-    };
+      // Gọi hàm từ smart contract service
+       
+      return await this.smartContractService.getAllProducts();
+          
+         
   } catch (error) {
-    return {
-      success: false,
-      message: error.message,
-    };
+      return {
+          success: false,
+          message: error.message, // Trả về thông điệp lỗi
+      };
   }
 }
 
@@ -149,18 +189,33 @@ async findAll(): Promise<{ count: number; product_ids: string[] }> {
 }
 
 
-
-  async update(id: string, updateProductDto: UpdateProductDto): Promise<Product> {
-    await this.findOne(id); // Kiểm tra sản phẩm tồn tại
-    await this.productRepository.update(id, updateProductDto);
-    return this.findOne(id);
-  }
-
-  async delete(id: string): Promise<string> {
+  async delete(id: string): Promise<boolean> {
     const result = await this.productRepository.delete(id);
-    if (result.affected === 0) {
-      throw new NotFoundException(`Product with ID ${id} not found`);
-    }
-    return  "This Product Not Available anymore. ";
+    return result.affected > 0; 
   }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

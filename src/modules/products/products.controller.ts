@@ -35,11 +35,11 @@ export class ProductController {
   @UseInterceptors(FilesInterceptor('files')) // 'files' là tên của field chứa files trong request
   async create(
     @Body() createProductDto: CreateProductDto,
-    @UploadedFiles() files: Express.Multer.File[],
+    @UploadedFiles() files: Express.Multer.File[],   // Chỉ định field cho files
   ): Promise<any> {
-     // Lấy buffer từ từng tệp
-    const buffers = files.map(file => file.buffer); // Lấy buffer của từng file
-    return this.productService.create(createProductDto, buffers);
+   
+    
+    return this.productService.create(createProductDto,files );
   }
 
   @Public()
@@ -56,20 +56,18 @@ export class ProductController {
        return product; // Trả về sản phẩm nếu tìm thấy
    }
    @Public()
-   @Get('onchainall/all')
-  async getAllProducts() {
-    try {
-      const result = await this.productService.getAllProductOnChain(); // Gọi service để lấy dữ liệu
-      return result; // Trả về kết quả từ service
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message, // Trả về lỗi nếu có
-      };
+   @Get('onchainall/all') // Đặt endpoint
+    async getAllProducts() {
+        try {
+            const result = await this.productService.getAllProductOnChain(); // Gọi service để lấy dữ liệu
+            return result; // Trả về kết quả từ service
+        } catch (error) {
+            return {
+                success: false,
+                message: error.message, // Trả về lỗi nếu có
+            };
+        }
     }
-  }
-
-
 
   @Public()
   // API lấy tổng số sản phẩm và danh sách product_id trong DB
@@ -78,32 +76,57 @@ export class ProductController {
     return await this.productService.findAll(); // Gọi service để lấy số lượng và danh sách ID sản phẩm
   }
 
-
-
-
   @Public()
   @Get('offchain/:id')
   findOne(@Param('id') id: string) {
     return this.productService.findOne(id);
   }
 
-
- 
-
-
-
   @Public()
-  @Patch(':id')
-  update(
-    @Param('id', ParseIntPipe) id: string,
-    @Body() updateProductDto: UpdateProductDto,
-  ) {
-    return this.productService.update(id, updateProductDto);
-  }
-
-  @Public()
-  @Delete(':id')
-  delete(@Param('id', ParseIntPipe) id: string) {
+  @Delete('delete/:id')
+  delete(@Param('id') id: string) {
     return this.productService.delete(id);
   }
+
+
+
+  @Public()
+  @Put('update/:id')
+  async update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
+    try {
+      await this.productService.updateProduct(
+        id,
+        updateProductDto.name,
+        updateProductDto.description,
+        updateProductDto.price,
+        updateProductDto.quantity,
+        updateProductDto.brand,
+        updateProductDto.category,
+        updateProductDto.size,
+        updateProductDto.status,
+        updateProductDto.imagecids,
+        updateProductDto.filecids,
+      );
+
+      return { message: 'Product updated successfully' };
+    } catch (error) {
+      console.error('Failed to update product:', error);
+      throw new Error('Failed to update product'); // Bạn có thể điều chỉnh lỗi tùy ý
+    }
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

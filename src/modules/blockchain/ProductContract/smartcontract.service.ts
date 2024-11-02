@@ -42,8 +42,8 @@ export class SmartContractService {
       category: string, // Thêm category vào tham số
       size: string, // Thêm size vào tham số
       status: string,
-      store:string,
-      cids: string[] // Cập nhật từ ipfsUrl thành mảng CIDs
+      imagecids: string[],
+      filecids: string[]  // Cập nhật từ ipfsUrl thành mảng CIDs
   ): Promise<string> {
       // Chuyển mảng CIDs thành chuỗi JSON để lưu trên blockchain (nếu cần)
       // const cidString = JSON.stringify(cids); // Nếu smart contract của bạn yêu cầu chuỗi
@@ -59,8 +59,8 @@ export class SmartContractService {
           category, // Thêm category vào tham số truyền
           size, // Thêm size vào tham số truyền
           status,
-          store,
-          cids // Truyền mảng CIDs vào tham số
+          imagecids,
+          filecids // Truyền mảng CIDs vào tham số
       );
 
       const receipt = await tx.wait(); // Chờ giao dịch được xác nhận
@@ -81,16 +81,17 @@ export class SmartContractService {
       category: string, // Thêm category vào tham số
       size: string, // Thêm size vào tham số
       status: string,
-      store:string,
-      cids: string[] 
+      imagecids: string[],
+      filecids: string[]
 ): Promise<void> {
     // Chuyển đổi price thành chuỗi
     const priceString = price.toFixed(2); // Giữ lại 2 chữ số thập phân, có thể tùy chỉnh
 
-    const tx = await this.contract.updateProduct(id, name, description, priceString, quantity,brand,category,size, status,store, cids);
+    const tx = await this.contract.updateProduct(id, name, description, priceString, quantity,brand,category,size, status, filecids, imagecids);
     const receipt = await tx.wait();
 
     console.log(`Product updated with transaction hash: ${receipt.transactionHash}`);
+    return receipt.transactionHash;
 }
 
     async getProduct(id: string): Promise<DataProductOnchain> {
@@ -109,20 +110,28 @@ export class SmartContractService {
           category: productData[5], // Giả định rằng category ở vị trí thứ 7
           size: productData[6], // Giả định rằng size ở vị trí thứ 8
           status: productData[7],
-          store: productData[8],
-          cids: productData[9], 
+          imagecids: productData[8], 
+          filecids: productData[9],      
           creater: productData[10],
       };
   } 
 
-    // Hàm gọi đến smart contract để lấy tất cả sản phẩm
+  // Hàm gọi đến smart contract để lấy tất cả sản phẩm
   async getAllProducts(): Promise<any> {
     try {
-      const products = await this.contract.getAllProducts(); // Gọi hàm trên smart contract
-      return products;
+        // Gọi hàm trên smart contract
+        const [count, ids] = await this.contract.getAllProducts();
+
+        // Chuyển đổi kết quả về định dạng bạn mong muốn
+        const result = {
+            count: count.toNumber(), // Chuyển đổi count sang kiểu số
+            product_ids: ids // ids là mảng ID sản phẩm
+        };
+
+        return result;
     } catch (error) {
-      throw new Error(`Failed to get products: ${error.message}`);
+        throw new Error(`Failed to get products: ${error.message}`);
     }
-  }
+}
 
 }

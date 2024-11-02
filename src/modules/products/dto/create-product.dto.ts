@@ -33,6 +33,8 @@ export class CreateProductDto {
   @IsString()
   size: string;
 
+  @Allow()
+  status: string;
 
   @Allow() // Bỏ qua kiểm tra cho thuộc tính này
   files: Express.Multer.File[];
