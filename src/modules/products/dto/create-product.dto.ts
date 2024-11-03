@@ -6,6 +6,7 @@ import { Allow, IsNotEmpty, IsNumber, IsString } from 'class-validator';
 export class CreateProductDto {
   @Allow()
   id: string;
+
   @IsNotEmpty()
   @IsString()
   name: string;
@@ -16,19 +17,22 @@ export class CreateProductDto {
 
   @IsNotEmpty()
   @IsNumber()
-  @Type(() => Number) // Chuyển đổi từ string sang number
+  @Type(() => Number) 
   price: number;
 
   @IsNotEmpty()
   @IsNumber()
-  @Type(() => Number) // Chuyển đổi từ string sang number
+  @Type(() => Number) 
   quantity: number;
+
   @IsNotEmpty()
   @IsString()
   brand: string;
+
   @IsNotEmpty()
   @IsString()
   category: string;
+
   @IsNotEmpty()
   @IsString()
   size: string;
@@ -36,6 +40,6 @@ export class CreateProductDto {
   @Allow()
   status: string;
 
-  @Allow() // Bỏ qua kiểm tra cho thuộc tính này
+  @Allow() 
   files: Express.Multer.File[];
 }

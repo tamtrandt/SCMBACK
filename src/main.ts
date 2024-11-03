@@ -3,7 +3,7 @@ import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
 import cors from 'cors';
-import cookieParser from 'cookie-parser';
+
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -15,17 +15,11 @@ async function bootstrap() {
   }));
    // Enable CORS
    app.use(cors({
-    origin: 'http://localhost:3000', // Thay thế với domain của bạn nếu cần
+    origin: 'http://localhost:3000', 
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
    }));
- 
- 
-
-
-
-
   await app.listen(port);
 }
 bootstrap();

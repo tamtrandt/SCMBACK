@@ -13,9 +13,9 @@ export class JwtAuthGuard extends AuthGuard('jwt')implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const isPublic = this.reflector.get<boolean>(IS_PUBLIC_KEY, context.getHandler());
     if (isPublic) {
-      return true; // Bỏ qua xác thực nếu route là public
+      return true; 
     }
-    return super.canActivate(context) as boolean; // Thực hiện xác thực nếu không phải public
+    return super.canActivate(context) as boolean; 
   }
   handleRequest(err, user, info, context: ExecutionContext) {
     if (err || !user) {

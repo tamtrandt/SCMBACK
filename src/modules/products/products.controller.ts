@@ -32,10 +32,10 @@ export class ProductController {
   
   @Public()
   @Post()
-  @UseInterceptors(FilesInterceptor('files')) // 'files' là tên của field chứa files trong request
+  @UseInterceptors(FilesInterceptor('files')) 
   async create(
     @Body() createProductDto: CreateProductDto,
-    @UploadedFiles() files: Express.Multer.File[],   // Chỉ định field cho files
+    @UploadedFiles() files: Express.Multer.File[],   
   ): Promise<any> {
    
     return this.productService.create(createProductDto,files );
@@ -65,42 +65,40 @@ export class ProductController {
       return { message: 'Product updated successfully' };
     } catch (error) {
       console.error('Failed to update product:', error);
-      throw new Error('Failed to update product'); // Bạn có thể điều chỉnh lỗi tùy ý
+      throw new Error('Failed to update product'); 
     }
   }
 
   @Public()
-   // Định nghĩa route để lấy thông tin sản phẩm theo ID
-   @Get('onchain/:id') // Endpoint sẽ nhận ID sản phẩm từ URL
+   @Get('onchain/:id') 
    async getProduct(@Param('id') id: string): Promise<DataProductOnchain> {
        const product = await this.productService.getProductOnChain(id);
        
        if (!product) {
-           // Nếu không tìm thấy sản phẩm, ném lỗi 404
+   
            throw new NotFoundException(`Product with ID ${id} not found`);
        }
        
-       return product; // Trả về sản phẩm nếu tìm thấy
+       return product; 
    }
    @Public()
-   @Get('onchainall/all') // Đặt endpoint
+   @Get('onchainall/all') 
     async getAllProducts() {
         try {
-            const result = await this.productService.getAllProductOnChain(); // Gọi service để lấy dữ liệu
-            return result; // Trả về kết quả từ service
+            const result = await this.productService.getAllProductOnChain();
+            return result; 
         } catch (error) {
             return {
                 success: false,
-                message: error.message, // Trả về lỗi nếu có
+                message: error.message, 
             };
         }
     }
 
   @Public()
-  // API lấy tổng số sản phẩm và danh sách product_id trong DB
   @Get('offchainall/all')
   async findAll(): Promise<{ count: number; product_ids: string[] }> {
-    return await this.productService.findAll(); // Gọi service để lấy số lượng và danh sách ID sản phẩm
+    return await this.productService.findAll(); 
   }
 
   @Public()

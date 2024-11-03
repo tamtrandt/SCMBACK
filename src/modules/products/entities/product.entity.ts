@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, PrimaryColumn } from 'typeorm';
+import { IsOptional } from 'class-validator';
+import { Entity, Column, CreateDateColumn, UpdateDateColumn, PrimaryColumn } from 'typeorm';
 
 @Entity()
 export class Product {
@@ -8,13 +9,13 @@ export class Product {
   @Column()
   transactionHash: string;
 
- @CreateDateColumn()
+  @CreateDateColumn()
   create_at: Date;
 
+  @IsOptional()
   @UpdateDateColumn()
   update_at: Date;
 
-
-  @Column("text", { array: true }) // Đổi kiểu dữ liệu thành JSON để lưu mảng
-  qrcode: string[]; // Lưu trữ tập hợp QR codes dưới dạng mảng
+  @Column("text", { array: true }) 
+  qrcode: string[]; 
 }

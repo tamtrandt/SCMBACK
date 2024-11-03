@@ -6,10 +6,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { LocalStrategy } from './passport/local.strategy';
-import { APP_GUARD } from '@nestjs/core';
-import { LocalAuthGuard } from './passport/local.guard';
 import { JwtStrategy } from './passport/jwt.strategy';
-import { JwtAuthGuard } from './passport/jwt.guard';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../users/entities/user.entity';
 
@@ -17,12 +14,12 @@ import { User } from '../users/entities/user.entity';
     imports: [
       UsersModule,
       PassportModule,
-      ConfigModule.forRoot({ isGlobal: true }), // Import ConfigModule và cho phép dùng toàn cục
+      ConfigModule.forRoot({ isGlobal: true }), 
       JwtModule.registerAsync({
         imports: [ConfigModule],
         inject: [ConfigService],
         useFactory: async (configService: ConfigService) => ({
-          secret: configService.get<string>('JWT_SECRET'), // Lấy secret từ file .env
+          secret: configService.get<string>('JWT_SECRET'), 
           signOptions: { expiresIn: '60s' },
         }),
       }),
@@ -31,9 +28,7 @@ import { User } from '../users/entities/user.entity';
     providers: [
         AuthService,
         LocalStrategy,
-        JwtStrategy,
-        
-        
+        JwtStrategy, 
     ],
     controllers: [AuthController],
     exports: [AuthService],
