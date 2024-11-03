@@ -87,10 +87,10 @@ export class SmartContractService {
     // Chuyển đổi price thành chuỗi
     const priceString = price.toFixed(2); // Giữ lại 2 chữ số thập phân, có thể tùy chỉnh
 
-    const tx = await this.contract.updateProduct(id, name, description, priceString, quantity,brand,category,size, status, filecids, imagecids);
+    const tx = await this.contract.updateProduct(id, name, description, priceString, quantity,brand,category,size, status,  imagecids,filecids);
     const receipt = await tx.wait();
 
-    console.log(`Product updated with transaction hash: ${receipt.transactionHash}`);
+    //console.log(`Product updated with transaction hash: ${receipt.transactionHash}`);
     return receipt.transactionHash;
 }
 

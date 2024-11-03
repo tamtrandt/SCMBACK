@@ -1,41 +1,45 @@
 
 
-import { IsString, IsNumber, IsArray } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsString, IsNumber, IsArray, IsOptional, Allow } from 'class-validator';
 
 export class UpdateProductDto {
 
   @IsString()
   id: string;
-  @IsString()
+  @IsOptional()
+  @IsString() 
   name: string;
 
+  @IsOptional() 
   @IsString()
   description: string;
 
-  @IsNumber()
+  @IsOptional() 
+  @Type(() => Number) // Chuyển đổi từ string sang number
   price: number;
-
-  @IsNumber()
+  @IsOptional() 
+  @Type(() => Number) // Chuyển đổi từ string sang number
   quantity: number;
 
+  @IsOptional() 
   @IsString()
   brand: string;
 
+  @IsOptional() 
   @IsString()
   category: string;
-
+  @IsOptional() 
   @IsString()
   size: string;
-
+  @IsOptional() 
   @IsString()
-  status: string;
-
-  @IsString()
-  store: string;
-
-  @IsArray()
+  status: string = 'available';
+  @Allow()
   imagecids: string[];
-  @IsArray()
+  @Allow()
   filecids: string[];
+  @Allow() // Bỏ qua kiểm tra cho thuộc tính này
+  newFiles: Express.Multer.File[];
 }
 

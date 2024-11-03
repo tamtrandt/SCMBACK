@@ -35,8 +35,6 @@ export class ProductService {
 
   async create(
     createProductDto: CreateProductDto,
-    // fileBuffers: Buffer[],
-    // imageBuffers: Buffer[],
     files
 
   ): Promise<any> {
@@ -60,7 +58,6 @@ const fileBuffers = otherfiles.map(image => image.buffer); // Lấy buffer của
   
   // Lấy URL từ CID
   const { url } = await this.storage.download(filecid);
-  console.log('URL:', url); // Đây là URL của tệp được tải lên
 
   // Tạo mã QR cho URL và lưu dưới dạng Data URL
   const qrCode = await QRCode.toDataURL(url);
@@ -74,7 +71,7 @@ for (const buffer of imageBuffers) {
   
   // Lấy URL từ CID
   const { url } = await this.storage.download(imagecid);
-  console.log('URL:', url); // Đây là URL của tệp được tải lên
+
 
   // Tạo mã QR cho URL và lưu dưới dạng Data URL
   const qrCode = await QRCode.toDataURL(url);
@@ -116,6 +113,24 @@ for (const buffer of imageBuffers) {
    async getProductOnChain(id: string): Promise<DataProductOnchain> {
     return this.smartContractService.getProduct(id);
    }
+
+    // Tạo một hàm riêng để xử lý việc upload và lấy CID
+    private uploadFiles = async (files: Express.Multer.File[]): Promise<string[]> => {
+      const cids: string[] = [];
+      for (const file of files) {
+        const cid = await this.storage.upload(file.buffer); // Upload buffer của file lên IPFS
+        cids.push(cid);
+        
+        // Lấy URL từ CID
+        const { url } = await this.storage.download(cid);
+        //console.log('Uploaded URL:', url);
+        
+        // Tạo mã QR (nếu cần)
+        // const qrCode = await QRCode.toDataURL(url);
+        // qrCodes.push(qrCode);
+      }
+      return cids;
+    };
 //Update On Chain
 async updateProduct(
   id: string, // ID sản phẩm
@@ -127,33 +142,63 @@ async updateProduct(
   category: string,
   size: string,
   status: string,
-  
-  imagecids: string[],
-  filecids: string[]
+  imagecids: string[], 
+  filecids: string[],
+  newFiles: Express.Multer.File[]
 ): Promise<void> {
-  try {
-      await this.smartContractService.updateProduct(
-          id,
-          name,
-          description,
-          price,
-          quantity,
-          brand,
-          category,
-          size,
-          status,
-        
-          imagecids,
-          filecids
+  try {   
+    const qrCodes: string[] = []; // Chỉ định kiểu cho qrCodes
+    const images = newFiles.filter(file => file.mimetype.startsWith('image/'));
+    const otherFiles = newFiles.filter(file => !file.mimetype.startsWith('image/'));
 
-      );
-      console.log('Product updated successfully');
+      // Upload hình ảnh và các tệp khác
+      const uploadedImageCids = await this.uploadFiles(images);
+      const uploadedFileCids = await this.uploadFiles(otherFiles);
+      // Đảm bảo imagecids là một mảng hoặc chuyển đổi thành mảng nếu nó không phải là mảng
+if (imagecids === undefined) {
+  imagecids = [];
+} else if (!Array.isArray(imagecids)) {
+  imagecids = [imagecids]; // Tạo mảng mới và giữ lại phần tử đó
+}
+
+// Đảm bảo filecids là một mảng hoặc chuyển đổi thành mảng nếu nó không phải là mảng
+if (filecids === undefined) {
+  filecids = [];
+} else if (!Array.isArray(filecids)) {
+  filecids = [filecids]; // Tạo mảng mới và giữ lại phần tử đó
+}
+  
+      // Gộp các CIDs mới vào danh sách hiện tại
+      imagecids.push(...uploadedImageCids);
+      filecids.push(...uploadedFileCids);
+
+
+  
+
+    // Gọi dịch vụ hợp đồng thông minh để cập nhật sản phẩm
+    await this.smartContractService.updateProduct(
+      id,
+      name,
+      description,
+      price,
+      quantity,
+      brand,
+      category,
+      size,
+      status,
+      imagecids,
+      filecids,
+    );
+
+    
   } catch (error) {
-      console.error('Failed to update product:', error);
-      throw error; // Hoặc xử lý lỗi theo cách khác tùy ý
+    console.error('Failed to update product:', error);
+    throw error; // Ném lỗi để xử lý ở mức cao hơn hoặc theo cách khác
   }
 }
-async getAllProductOnChain() {
+
+
+async getAllProductOnChain() {  
   try {
       // Gọi hàm từ smart contract service
        

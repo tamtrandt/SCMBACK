@@ -29,7 +29,7 @@ export class ProductController {
   constructor(private readonly productService: ProductService,
     private readonly configService: ConfigService,
   ) {}
-
+  
   @Public()
   @Post()
   @UseInterceptors(FilesInterceptor('files')) // 'files' là tên của field chứa files trong request
@@ -38,8 +38,35 @@ export class ProductController {
     @UploadedFiles() files: Express.Multer.File[],   // Chỉ định field cho files
   ): Promise<any> {
    
-    
     return this.productService.create(createProductDto,files );
+  }
+  @Public()
+  @Put('update/:id')
+  @UseInterceptors(FilesInterceptor('newFiles'))
+  async update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto,
+  @UploadedFiles() newFiles: Express.Multer.File[], ) {
+    try {
+      
+      await this.productService.updateProduct(
+        id,
+        updateProductDto.name,
+        updateProductDto.description,
+        updateProductDto.price,
+        updateProductDto.quantity,
+        updateProductDto.brand,
+        updateProductDto.category,
+        updateProductDto.size,
+        updateProductDto.status,
+        updateProductDto.imagecids,
+        updateProductDto.filecids,
+        newFiles
+      );
+
+      return { message: 'Product updated successfully' };
+    } catch (error) {
+      console.error('Failed to update product:', error);
+      throw new Error('Failed to update product'); // Bạn có thể điều chỉnh lỗi tùy ý
+    }
   }
 
   @Public()
@@ -90,30 +117,7 @@ export class ProductController {
 
 
 
-  @Public()
-  @Put('update/:id')
-  async update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
-    try {
-      await this.productService.updateProduct(
-        id,
-        updateProductDto.name,
-        updateProductDto.description,
-        updateProductDto.price,
-        updateProductDto.quantity,
-        updateProductDto.brand,
-        updateProductDto.category,
-        updateProductDto.size,
-        updateProductDto.status,
-        updateProductDto.imagecids,
-        updateProductDto.filecids,
-      );
-
-      return { message: 'Product updated successfully' };
-    } catch (error) {
-      console.error('Failed to update product:', error);
-      throw new Error('Failed to update product'); // Bạn có thể điều chỉnh lỗi tùy ý
-    }
-  }
+  
 
 
 
