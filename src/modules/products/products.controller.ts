@@ -47,7 +47,7 @@ export class ProductController {
   @UploadedFiles() newFiles: Express.Multer.File[], ) {
     try {
       
-      await this.productService.updateProduct(
+     const data =  await this.productService.updateProduct(
         id,
         updateProductDto.name,
         updateProductDto.description,
@@ -62,7 +62,7 @@ export class ProductController {
         newFiles
       );
 
-      return { message: 'Product updated successfully' };
+      return data;
     } catch (error) {
       console.error('Failed to update product:', error);
       throw new Error('Failed to update product'); 

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { getRepository, Repository } from 'typeorm';
 import { Product } from './entities/product.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { ThirdwebStorage } from '@thirdweb-dev/storage';
@@ -118,9 +118,9 @@ export class ProductService {
     imagecids: string[],
     filecids: string[],
     newFiles: Express.Multer.File[]
-  ): Promise<void> {
+  ): Promise<any> {
     try {
-      const qrCodes: string[] = []; 
+      const qrCodes = []; 
       const images = newFiles.filter(file => file.mimetype.startsWith('image/'));
       const otherFiles = newFiles.filter(file => !file.mimetype.startsWith('image/'));
 
@@ -142,8 +142,13 @@ export class ProductService {
       // Gộp các CIDs mới vào danh sách hiện tại
       imagecids.push(...uploadedImageCids);
       filecids.push(...uploadedFileCids);
+        // Generate QR codes for file CIDs
+    const fileQRCodes = await this.generateQRCodesFromCIDs(filecids);
+    qrCodes.push(...fileQRCodes);
+    const imageQRCodes = await this.generateQRCodesFromCIDs(imagecids);
+    qrCodes.push(...imageQRCodes);
 
-      await this.smartContractService.updateProduct(
+      const transactionupdat = await this.smartContractService.updateProduct(
         id,
         name,
         description,
@@ -156,6 +161,19 @@ export class ProductService {
         imagecids,
         filecids,
       );
+
+      // Lấy repository của Product
+      // Tìm sản phẩm dựa trên id
+      const product = await this.productRepository.findOne({ where: { id } });
+        
+        if (!product) {
+            throw new Error(`Product with id ${id} not found`);
+        }
+       product.transactionHash = transactionupdat; 
+       product.qrcode = qrCodes; 
+       product.update_at = new Date(); 
+       return await this.productRepository.save(product);
+     
     } catch (error) {
       console.error('Failed to update product:', error);
       throw error; 

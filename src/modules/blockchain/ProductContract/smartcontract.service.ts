@@ -72,7 +72,7 @@ async updateProduct(
       status: string,
       imagecids: string[],
       filecids: string[]
-): Promise<void> {
+): Promise<string> {
 
     const priceString = price.toFixed(2); 
 

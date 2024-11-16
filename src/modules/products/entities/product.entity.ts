@@ -9,6 +9,7 @@ export class Product {
   @Column()
   transactionHash: string;
 
+  @IsOptional()
   @CreateDateColumn()
   create_at: Date;
 
