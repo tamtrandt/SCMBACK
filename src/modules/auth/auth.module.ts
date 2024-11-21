@@ -20,7 +20,7 @@ import { User } from '../users/entities/user.entity';
         inject: [ConfigService],
         useFactory: async (configService: ConfigService) => ({
           secret: configService.get<string>('JWT_SECRET'), 
-          signOptions: { expiresIn: '60s' },
+          signOptions: { expiresIn: '1d' },
         }),
       }),
       TypeOrmModule.forFeature([User]), 
@@ -31,6 +31,6 @@ import { User } from '../users/entities/user.entity';
         JwtStrategy, 
     ],
     controllers: [AuthController],
-    exports: [AuthService],
+    exports: [AuthService, AuthModule, JwtModule],
   })
 export class AuthModule {}

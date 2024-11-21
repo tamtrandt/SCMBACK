@@ -34,7 +34,8 @@ export class ProductService {
 
   async create(
     createProductDto: CreateProductDto,
-    files
+    files,
+    walletAddress: string,
   ): Promise<any> {
     //Generate ID
     const generatedId = uuidv4();
@@ -52,6 +53,9 @@ export class ProductService {
     qrCodes.push(...imageQRCodes);
 
     const priceString = this.priceToString(createProductDto.price);
+
+     // Gọi hàm setWalletAddress trước khi gọi addProduct
+  this.smartContractService.setWalletAddress(walletAddress);
 
     // Call smart contract to save the product and get back the block hash
     const transactionHash = await this.smartContractService.addProduct(
@@ -117,7 +121,8 @@ export class ProductService {
     status: string,
     imagecids: string[],
     filecids: string[],
-    newFiles: Express.Multer.File[]
+    newFiles: Express.Multer.File[],
+    walletAddress: string, // Thêm walletAddress
   ): Promise<any> {
     try {
       const qrCodes = []; 
@@ -147,6 +152,9 @@ export class ProductService {
     qrCodes.push(...fileQRCodes);
     const imageQRCodes = await this.generateQRCodesFromCIDs(imagecids);
     qrCodes.push(...imageQRCodes);
+
+     // Gọi hàm setWalletAddress trước khi gọi updateProduct
+     this.smartContractService.setWalletAddress(walletAddress);
 
       const transactionupdat = await this.smartContractService.updateProduct(
         id,
@@ -181,7 +189,8 @@ export class ProductService {
   }
 
 
-  async getAllProductOnChain() { return await this.smartContractService.getAllProducts(); }
+  async getAllProductOnChain() { 
+    return await this.smartContractService.getAllProducts(); }
   
 
   async findOne(id: string): Promise<Product> {
