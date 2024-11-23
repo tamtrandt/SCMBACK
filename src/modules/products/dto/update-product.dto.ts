@@ -1,12 +1,11 @@
 
 
 import { Type } from 'class-transformer';
-import { IsString, IsOptional, Allow } from 'class-validator';
+import { IsString, IsOptional, Allow, IsNotEmpty, IsNumber } from 'class-validator';
 
 export class UpdateProductDto {
   @IsString()
-  id: string;
-
+  id: number;
   @IsOptional()
   @IsString() 
   name: string;
@@ -45,3 +44,14 @@ export class UpdateProductDto {
   newFiles: Express.Multer.File[];
 }
 
+export class UpdatePriceDto {
+  @IsString()
+  @IsNotEmpty()
+  price: string;
+}
+
+export class UpdateQuantityDto {
+  @IsNumber()
+  @IsNotEmpty()
+  quantity: number ;
+}

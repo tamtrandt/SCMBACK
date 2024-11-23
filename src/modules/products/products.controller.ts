@@ -2,126 +2,31 @@ import {
   Controller,
   Get,
   Post,
-  Patch,
   Delete,
   Param,
   Body,
-  ParseIntPipe,
-  Res,
   UseInterceptors,
   UploadedFiles,
-  ParseArrayPipe,
   NotFoundException,
   Put,
   UseGuards,
   Request,
+  Patch,
 } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
+import { UpdatePriceDto, UpdateProductDto, UpdateQuantityDto } from './dto/update-product.dto';
 import { ProductService } from './products.service';
 import { Public } from 'src/utils/decorator';
-import { ConfigService } from '@nestjs/config';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { DataProductOnchain } from '../blockchain/interfaces/productsc';
-import { Product } from './entities/product.entity';
-import { AuthGuard } from '@nestjs/passport';
 import { WalletAuthGuard } from '../blockchain/ProductContract/wallet/wallet.guard';
-
-// @Controller('products')
-// export class ProductController {
-//   constructor(private readonly productService: ProductService,
-//     private readonly configService: ConfigService,
-//   ) {}
-  
-//   @Public()
-//   @Post()
-//   @UseInterceptors(FilesInterceptor('files')) 
-//   async create(
-//     @Body() createProductDto: CreateProductDto,
-//     @UploadedFiles() files: Express.Multer.File[],   
-//   ): Promise<any> {
-   
-//     return this.productService.create(createProductDto,files );
-//   }
-//   @Public()
-//   @Put('update/:id')
-//   @UseInterceptors(FilesInterceptor('newFiles'))
-//   async update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto,
-//   @UploadedFiles() newFiles: Express.Multer.File[], ) {
-//     try {
-      
-//      const data =  await this.productService.updateProduct(
-//         id,
-//         updateProductDto.name,
-//         updateProductDto.description,
-//         updateProductDto.price,
-//         updateProductDto.quantity,
-//         updateProductDto.brand,
-//         updateProductDto.category,
-//         updateProductDto.size,
-//         updateProductDto.status,
-//         updateProductDto.imagecids,
-//         updateProductDto.filecids,
-//         newFiles
-//       );
-
-//       return data;
-//     } catch (error) {
-//       console.error('Failed to update product:', error);
-//       throw new Error('Failed to update product'); 
-//     }
-//   }
-
-//   @Public()
-//    @Get('onchain/:id') 
-//    async getProduct(@Param('id') id: string): Promise<DataProductOnchain> {
-//        const product = await this.productService.getProductOnChain(id);
-       
-//        if (!product) {
-   
-//            throw new NotFoundException(`Product with ID ${id} not found`);
-//        }
-       
-//        return product; 
-//    }
-//    @Public()
-//    @Get('onchainall/all') 
-//     async getAllProducts() {
-//         try {
-//             const result = await this.productService.getAllProductOnChain();
-//             return result; 
-//         } catch (error) {
-//             return {
-//                 success: false,
-//                 message: error.message, 
-//             };
-//         }
-//     }
-
-//   @Public()
-//   @Get('offchainall/all')
-//   async findAll(): Promise<{ count: number; product_ids: string[] }> {
-//     return await this.productService.findAll(); 
-//   }
-
-//   @Public()
-//   @Get('offchain/:id')
-//   findOne(@Param('id') id: string) {
-//     return this.productService.findOne(id);
-//   }
-
-//   @Public()
-//   @Delete('delete/:id')
-//   delete(@Param('id') id: string) {
-//     return this.productService.delete(id);
-//   }
-
-// }
+import { SmartContractService } from '../blockchain/ProductContract/smartcontract.service';
 
 
 @Controller('products')
 export class ProductController {
-  constructor(private readonly productService: ProductService) {}
+  constructor(private readonly productService: ProductService,
+    private readonly smartContractService: SmartContractService,
+  ) {}
 
   // Tạo sản phẩm (yêu cầu WalletToken)
   @UseGuards(WalletAuthGuard)
@@ -132,28 +37,27 @@ export class ProductController {
     @Body() createProductDto: CreateProductDto,
     @UploadedFiles() files: Express.Multer.File[],
   ): Promise<any> {
-    const walletAddress = req.user.walletAddress; // Lấy walletAddress từ token
-    console.log('Wallet Address:', walletAddress);
-
+    const walletAddress = req.user.walletAddress; 
     // Pass walletAddress vào ProductService
     return this.productService.create(createProductDto, files, walletAddress);
   }
 
+
+
+
   // Cập nhật sản phẩm (yêu cầu WalletToken)
   @UseGuards(WalletAuthGuard)
-  @Put('update/:id')
+  @Put('update/:id/metadata')
   @UseInterceptors(FilesInterceptor('newFiles'))
   async update(
     @Request() req,
-    @Param('id') id: string,
+    @Param('id') id: number,
     @Body() updateProductDto: UpdateProductDto,
     @UploadedFiles() newFiles: Express.Multer.File[],
   ) {
     const walletAddress = req.user.walletAddress;
-    console.log('Wallet Address:', walletAddress);
-
     // Pass walletAddress vào ProductService
-    return this.productService.updateProduct(
+    return this.productService.updateMetadata(
       id,
       updateProductDto.name,
       updateProductDto.description,
@@ -170,18 +74,61 @@ export class ProductController {
     );
   }
 
-  // Lấy thông tin sản phẩm on-chain (yêu cầu WalletToken)
-  @Public()
-  @Get('onchain/:id')
-  async getProduct(@Param('id') id: string) {
-    const product = await this.productService.getProductOnChain(id);
-    if (!product) {
-      throw new NotFoundException(`Product with ID ${id} not found`);
-    }
-    return product;
+
+  // Update Price
+  @UseGuards(WalletAuthGuard)
+  @Patch('update/:id/price')
+  async updatePrice(
+    @Request() req,
+    @Param('id') id: number,
+    @Body() body: UpdatePriceDto, 
+  ) {
+    // Lấy địa chỉ ví từ yêu cầu của người dùng đã đăng nhập
+    const walletAddress = req.user.walletAddress;
+      // Gọi service để cập nhật giá sản phẩm
+      const success = await this.productService.updateProductPrice(id, body.price, walletAddress);
+      // Nếu cập nhật thành công
+      if (success) {
+        return { message: 'OK' }; // Trả về thông báo thành công
+      } else {
+        throw new Error('Price update failed'); // Nếu có lỗi, throw lỗi
+      }
   }
 
+  //Update Quantity
+  @UseGuards(WalletAuthGuard)
+  @Patch('update/:id/quantity')
+  async updateQuantity(
+    @Request() req,
+    @Param('id') id: number,
+    @Body() body: UpdateQuantityDto, 
+  ) {
+    const walletAddress = req.user.walletAddress;
+      const hash = await this.productService.updateProductQuantity(id, body.quantity, walletAddress);
+      return { hash };
+  }
+
+
   // Lấy tất cả sản phẩm on-chain (yêu cầu WalletToken)
+
+  @Public()
+  @Get('onchain/:tokenId')
+  async getProductDetails(@Param('tokenId') tokenId: number) {
+    try {
+      // Call getProductInfo from SmartContractService to get the details
+      const productDetails = await this.productService.getProductDetails(tokenId);
+      // Return the product details
+      return {
+        success: true,
+        data: productDetails,
+      };
+    } catch (error) {
+      // Handle the error appropriately
+      console.error('Error fetching product details:', error);
+      throw new NotFoundException('Product not found or contract interaction failed');
+    }
+  }
+
   @Public()
   @Get('onchainall/all')
   async getAllProducts() {
@@ -191,21 +138,21 @@ export class ProductController {
   // Lấy tất cả sản phẩm off-chain (yêu cầu WalletToken)
   @Public()
   @Get('offchainall/all')
-  async findAll(): Promise<{ count: number; product_ids: string[] }> {
+  async findAll(): Promise<{ count: number; product_ids: number[] }> {
     return await this.productService.findAll();
   }
 
   // Lấy sản phẩm off-chain theo ID (yêu cầu WalletToken)
   @Public()
   @Get('offchain/:id')
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id') id: number) {
     return this.productService.findOne(id);
   }
 
   // Xóa sản phẩm (yêu cầu WalletToken)
   @Public()
   @Delete('delete/:id')
-  async delete(@Param('id') id: string) {
+  async delete(@Param('id') id: number) {
     return this.productService.delete(id);
   }
 }

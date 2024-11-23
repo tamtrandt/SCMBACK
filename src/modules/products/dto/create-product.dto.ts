@@ -5,7 +5,7 @@ import { Allow, IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class CreateProductDto {
   @Allow()
-  id: string;
+  id: number;
 
   @IsNotEmpty()
   @IsString()

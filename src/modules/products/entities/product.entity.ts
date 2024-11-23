@@ -4,7 +4,7 @@ import { Entity, Column, CreateDateColumn, UpdateDateColumn, PrimaryColumn } fro
 @Entity()
 export class Product {
   @PrimaryColumn()
-  id: string;
+  id: number;
 
   @Column()
   transactionHash: string;
