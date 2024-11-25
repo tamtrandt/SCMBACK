@@ -1,22 +1,14 @@
 import { IsOptional } from 'class-validator';
-import { Entity, Column, CreateDateColumn, UpdateDateColumn, PrimaryColumn } from 'typeorm';
+import { Entity, Column, CreateDateColumn, UpdateDateColumn, PrimaryColumn, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
 export class Product {
-  @PrimaryColumn()
+ @PrimaryGeneratedColumn()
   id: number;
 
   @Column()
-  transactionHash: string;
+  TokenId: number;
 
-  @IsOptional()
-  @CreateDateColumn()
-  create_at: Date;
-
-  @IsOptional()
-  @UpdateDateColumn()
-  update_at: Date;
-
-  @Column("text", { array: true }) 
-  qrcode: string[]; 
+  @Column() 
+  qrcode: string; 
 }

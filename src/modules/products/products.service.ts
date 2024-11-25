@@ -10,6 +10,8 @@ import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 import { DataProductOnchain } from '../blockchain/interfaces/productsc';
 import { SmartContractService } from '../blockchain/ProductContract/smartcontract.service';
+import { lastValueFrom } from 'rxjs';
+import { HttpService } from '@nestjs/axios';
 
 
 
@@ -22,6 +24,7 @@ export class ProductService {
     private productRepository: Repository<Product>,
     private configService: ConfigService,
     private readonly smartContractService: SmartContractService,
+    private readonly httpService: HttpService,
   ) {
     // Dung Dich Vu IPFS cua thirdweb
     const apiKey = this.configService.get<string>('THIRDWEB_API_KEY');
@@ -69,7 +72,13 @@ export class ProductService {
     const metadataCID = await this.storage.upload(productMetadata);
     const metadataResponse = await this.storage.download(metadataCID);
     const metadataURL = metadataResponse.url;
-    console.log('Uploaded metadata CID:', metadataURL);
+    //console.log('Uploaded metadata CID:', metadataURL);
+     // Tạo mã QR cho file và hình ảnh
+     //const qrCodes = [];
+    //  const fileQRCodes = await this.generateQRCodesFromCIDs(fileCIDs);
+    //  qrCodes.push(...fileQRCodes);
+    //  const imageQRCodes = await this.generateQRCodesFromCIDs(imageCIDs);
+    //  qrCodes.push(...imageQRCodes);
   
     // Đặt ví cho backend
     this.smartContractService.setWalletAddress(walletAddress);
@@ -82,7 +91,7 @@ export class ProductService {
   
     try {
       // Gọi hàm mintProduct từ smart contract
-      const transactionHash = await this.smartContractService.mintProduct(
+      const data = await this.smartContractService.mintProduct(
         tokenId,
         amount,
         metadataURL,
@@ -90,24 +99,20 @@ export class ProductService {
         quantity,
         status,
       );
+
+      //console.log(data);
+    const transactionHash = await this.storage.upload(data);
+    const transacrespone = await this.storage.download(transactionHash);
+    const transURL = transacrespone.url;
+    const qrTrans = await QRCode.toDataURL(transURL);
+    //console.log(qrTrans);
+    const trans = await this.smartContractService.callStoreEventCID(tokenId, transURL);
+    //console.log(trans);
   
-      // Tạo mã QR cho file và hình ảnh
-      const qrCodes = [];
-      const fileQRCodes = await this.generateQRCodesFromCIDs(fileCIDs);
-      qrCodes.push(...fileQRCodes);
-      const imageQRCodes = await this.generateQRCodesFromCIDs(imageCIDs);
-      qrCodes.push(...imageQRCodes);
-  
-      // Lưu thông tin sản phẩm vào cơ sở dữ liệu PostgreSQL
-      const newProduct = this.productRepository.create({
-        id: tokenId,
-        transactionHash: transactionHash,
-        create_at: new Date(),
-        qrcode: qrCodes, // Mã QR cho các file và hình ảnh
-      });
+      
   
       // Lưu vào cơ sở dữ liệu
-      return await this.productRepository.save(newProduct);
+      return tokenId;
     } catch (error) {
       console.error('Error minting product or saving to database:', error);
       throw new Error('Failed to create product');
@@ -163,8 +168,6 @@ export class ProductService {
     id: number, 
     name: string,
     description: string,
-    price: number,
-    quantity: number,
     brand: string,
     category: string,
     size: string,
@@ -224,17 +227,23 @@ export class ProductService {
 
       const transactionupdat = await this.smartContractService.updateMetadata(id,metadataCID  );
 
+      const transactionHash = await this.storage.upload(transactionupdat);
+      const transacrespone = await this.storage.download(transactionHash);
+      const transURL = transacrespone.url;
+      const qrTrans = await QRCode.toDataURL(transURL);
+      //console.log(qrTrans);
+      const trans = await this.smartContractService.callStoreEventCID(id, transURL);
+
       // Lấy repository của Product
       // Tìm sản phẩm dựa trên id
-      const product = await this.productRepository.findOne({ where: { id } });
+      // const product = await this.productRepository.findOne({ where: { id } });
         
-        if (!product) {
-            throw new Error(`Product with id ${id} not found`);
-        }
-       product.transactionHash = transactionupdat; 
-       product.qrcode = qrCodes; 
-       product.update_at = new Date(); 
-       return await this.productRepository.save(product);
+      //   if (!product) {
+      //       throw new Error(`Product with id ${id} not found`);
+      //   }
+      //  product.qrcode = qrCodes; 
+       //return await this.productRepository.save(product);
+       return transactionupdat
      
     } catch (error) {
       console.error('Failed to update product:', error);
@@ -242,51 +251,60 @@ export class ProductService {
     }
   }
 
-
  // Update Price
- // Cập nhật giá sản phẩm
  async updateProductPrice(id: number, price: string, walletAddress: string,): Promise<any> {
   try {
     this.smartContractService.setWalletAddress(walletAddress);
       // Gọi hàm updatePrice từ smart contract service
-      const transactionHash = await this.smartContractService.updatePrice(id, price);
-      return transactionHash;
+      const transactionUPrice = await this.smartContractService.updatePrice(id, price);
+      const transactionHash = await this.storage.upload(transactionUPrice);
+      const transacrespone = await this.storage.download(transactionHash);
+      const transURL = transacrespone.url;
+      const qrTrans = await QRCode.toDataURL(transURL);
+      //console.log(qrTrans);
+      const trans = await this.smartContractService.callStoreEventCID(id, transURL);
+      
+      return transactionUPrice;
   } catch (error) {
       console.error('Error in ProductService updating price:', error);
       throw new Error('Failed to update product price at ProService');
   }
 }
-
 // Cập nhật số lượng sản phẩm
 async updateProductQuantity(id: number, quantity: number, walletAddress: string,): Promise<any> {
   try {
     this.smartContractService.setWalletAddress(walletAddress);
       // Gọi hàm updateQuantity từ smart contract service
-      const transactionHash = await this.smartContractService.updateQuantity(id, quantity);
-      return transactionHash;
+      const transactionUQuan = await this.smartContractService.updateQuantity(id, quantity);
+      const transactionHash = await this.storage.upload(transactionUQuan);
+      const transacrespone = await this.storage.download(transactionHash);
+      const transURL = transacrespone.url;
+      const qrTrans = await QRCode.toDataURL(transURL);
+      //console.log(qrTrans);
+      const trans = await this.smartContractService.callStoreEventCID(id, transURL);
+      return transactionUQuan;
   } catch (error) {
       console.error('Error in ProductService updating quantity:', error);
       throw new Error('Failed to update product quantity');
   }
 }
 
-  
 
+async findByTokenId(tokenId: number): Promise<Product[]> {
+  // Truy vấn tất cả các sản phẩm có TokenId giống với giá trị tokenId truyền vào
+  const products = await this.productRepository.find({
+    where: { TokenId: tokenId },  // Lọc theo TokenId
+  });
 
-
-
-
-
-
-
-
-  async findOne(id: number): Promise<Product> {
-    const product = await this.productRepository.findOneBy({ id });
-    if (!product) {
-      throw new NotFoundException(`Product with ID ${id} not found`);
-    }
-    return product;
+  // Nếu không tìm thấy sản phẩm nào với TokenId truyền vào, ném exception
+  if (products.length === 0) {
+    throw new NotFoundException(`No products found with TokenId ${tokenId}`);
   }
+
+  // Trả về danh sách các sản phẩm tìm được
+  return products;
+}
+
 
 
   async findAll(): Promise<{ count: number; product_ids: number[] }> {
@@ -297,17 +315,84 @@ async updateProductQuantity(id: number, quantity: number, walletAddress: string,
   }
 
 
-  async delete(id: number): Promise<boolean> {
-    const result = await this.productRepository.delete(id);
-    return result.affected > 0;
+  async delete(id: number, walletAddress: string): Promise<any> {
+    // Đặt địa chỉ ví hiện tại
+    this.smartContractService.setWalletAddress(walletAddress);
+  
+    // Lấy số lượng token mà ví sở hữu
+    const balance = await this.smartContractService.getTokenBalance(walletAddress, id);
+  
+    // Xác nhận rằng ví sở hữu ít nhất 1 token
+    if (balance <= 0) {
+      throw new Error(`Wallet ${walletAddress} does not own any tokens of ID ${id}`);
+    }
+  
+    // Thực hiện burn toàn bộ số token mà ví sở hữu
+    const transactionDelete = await this.smartContractService.burnProduct(id, balance);
+    const transactionHash = await this.storage.upload(transactionDelete);
+      const transacrespone = await this.storage.download(transactionHash);
+      const transURL = transacrespone.url;
+      const qrTrans = await QRCode.toDataURL(transURL);
+      //console.log(qrTrans);
+      const trans = await this.smartContractService.callStoreEventCID(id, transURL);
+  
+    // Xóa sản phẩm khỏi cơ sở dữ liệu nếu burn thành công
+    //const result = await this.productRepository.delete(id);
+  
+    // Trả về kết quả xóa
+    return transactionDelete;
+  }
+  
+  async getAllCIDs(tokenId: number) {
+    try {
+      // Gọi hàm getTransactionCIDs từ smart contract
+      const cids = await this.smartContractService.getAllCIDs(tokenId);
+      const result = await this.getEventData(cids);
+      return result;
+    } catch (error) {
+      console.error('Error fetching CIDs:', error);
+      throw new Error('Unable to fetch CIDs from contract');
+    }
   }
 
 
 
 
+  async getEventData(ipfsLinks: string[]) {
+    const result = [];
+
+    // Lặp qua tất cả các link IPFS
+    for (let link of ipfsLinks) {
+      try {
+        // Lấy dữ liệu từ IPFS
+        const response = await lastValueFrom(this.httpService.get(link));
+
+        // Giả sử dữ liệu trả về là JSON, chuyển đổi và tạo object
+        const data = response.data;
 
 
+        const eventObject = {
+          transactionHash: data.transactionHash,
+          event: {
+            tokenId: data.event.tokenId, // Đảm bảo truy cập đúng thuộc tính
+            action: data.event.action,
+            initiator: data.event.initiator,
+            timestamp: data.event.timestamp,
+            additionalInfo: data.event.additionalInfo,
+          },
+        };
+        
 
+        // Thêm object vào kết quả
+        result.push(eventObject);
+      } catch (error) {
+        console.error(`Error fetching data from IPFS: ${link}`, error);
+      }
+    }
+
+    // Trả về mảng kết quả
+    return result;
+  }
 
 
 

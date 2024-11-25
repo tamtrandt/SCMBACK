@@ -61,8 +61,6 @@ export class ProductController {
       id,
       updateProductDto.name,
       updateProductDto.description,
-      updateProductDto.price,
-      updateProductDto.quantity,
       updateProductDto.brand,
       updateProductDto.category,
       updateProductDto.size,
@@ -141,18 +139,49 @@ export class ProductController {
   async findAll(): Promise<{ count: number; product_ids: number[] }> {
     return await this.productService.findAll();
   }
+  
 
   // Lấy sản phẩm off-chain theo ID (yêu cầu WalletToken)
   @Public()
   @Get('offchain/:id')
   async findOne(@Param('id') id: number) {
-    return this.productService.findOne(id);
+    return this.productService.getAllCIDs(id);
+  }
+  @Public()
+  @Get('offchain2/:id')
+  async findOn1e(@Param('id') id: number) {
+    return this.smartContractService.getAllCIDs(id);
   }
 
   // Xóa sản phẩm (yêu cầu WalletToken)
-  @Public()
+  @UseGuards(WalletAuthGuard)
   @Delete('delete/:id')
-  async delete(@Param('id') id: number) {
-    return this.productService.delete(id);
+  async delete( @Request() req, @Param('id') id: number) {
+    const walletAddress = req.user.walletAddress;
+    const result = await this.productService.delete(id, walletAddress);
+
+    // Trả về phản hồi dạng JSON
+    return {
+      success: result,
+      message: result ? 'Product deleted successfully' : 'Failed to delete product',
   }
+};
+
+@Public()
+@Get('balance/:walletAddress/:tokenId')
+async getTokenBalance(
+  @Param('walletAddress') walletAddress: string, // Địa chỉ ví
+  @Param('tokenId') tokenId: number, // TokenId cần kiểm tra
+): Promise<number> {
+  try {
+    const balance = await this.smartContractService.getTokenBalance(walletAddress, tokenId);
+    return balance; // Trả về số dư token
+  } catch (error) {
+    console.error('Error fetching token balance:', error);
+    throw error;
+  }
+}
+
+
+
 }
