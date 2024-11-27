@@ -1,8 +1,9 @@
-import { Controller, Post, Body, Param, Get, NotFoundException } from '@nestjs/common';
+import { Controller, Post, Body, Param, Get, NotFoundException, UseGuards } from '@nestjs/common';
 import * as ethers from 'ethers';
 
 import { Public } from 'src/utils/decorator';
 import { SmartContractService } from './smartcontract.service';
+import { WalletAuthGuard } from './wallet/wallet.guard';
 
 
 @Controller('smartcontract')
@@ -22,5 +23,5 @@ export class SmartContractController {
     return { success: true, WalletToken };
   }
 
-  
+
 }

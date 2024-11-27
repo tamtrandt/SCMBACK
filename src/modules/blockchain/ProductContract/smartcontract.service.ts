@@ -394,5 +394,22 @@ async  callStoreEventCID(tokenId, cid) {
         console.error("Error fetching CIDs:", error);
       }
     }
+
+
+    async setApprovalForAll(operator: string, approved: boolean): Promise<string> {
+      try {
+        const tx = await this.contract.setApprovalForAll(operator, approved);
+        console.log('Transaction sent:', tx.hash);
+  
+        // Đợi giao dịch được xác nhận
+        const receipt = await tx.wait();
+        console.log('Transaction confirmed:', receipt.transactionHash);
+  
+        return receipt.transactionHash;
+      } catch (error) {
+        console.error('Error in setApprovalForAll:', error);
+        throw new Error(error.message);
+      }
+    }
 }
  
