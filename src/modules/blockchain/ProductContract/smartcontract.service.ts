@@ -395,21 +395,42 @@ async  callStoreEventCID(tokenId, cid) {
       }
     }
 
-
-    async setApprovalForAll(operator: string, approved: boolean): Promise<string> {
+    async buyTokens(tokenIds: number[], amounts: number[], totalPrice: ethers.BigNumber): Promise<{ transactionHash: string; event: any }> {
       try {
-        const tx = await this.contract.setApprovalForAll(operator, approved);
-        console.log('Transaction sent:', tx.hash);
+        const contractWithSigner = this.getContractWithSigner();
+        const transaction = await contractWithSigner.buyTokens(tokenIds, amounts, totalPrice, {
+          value: totalPrice, // Chuyển đổi ETH sang Wei
+        });
   
-        // Đợi giao dịch được xác nhận
-        const receipt = await tx.wait();
-        console.log('Transaction confirmed:', receipt.transactionHash);
-  
-        return receipt.transactionHash;
+         // Chờ giao dịch được xác nhận
+         const receipt = await transaction.wait();
+    
+         // Phân tích log để lấy event
+         const eventLog = receipt.logs
+           .map((log) => {
+             try {
+               return this.contract.interface.parseLog(log); // Giải mã log
+             } catch (error) {
+               return null; // Nếu không decode được log, bỏ qua
+             }
+           })
+           .find((e) => e && e.name === "TokenStateChanged"); // Tìm sự kiện "TokenStateChanged"
+            // Decode event nếu tồn tại
+     const decodedEvent = eventLog ? this.decodeEvent(eventLog.args) : null;
+     
+         // Trả về transaction hash và thông tin event
+         return {
+           transactionHash: transaction.hash,
+           event: decodedEvent, // Trả về dữ liệu của event nếu có
+         };
       } catch (error) {
-        console.error('Error in setApprovalForAll:', error);
-        throw new Error(error.message);
+        console.error('Error calling buyTokens:', error);
+        throw error;
       }
     }
+  
+
+
+
 }
  

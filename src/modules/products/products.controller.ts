@@ -183,15 +183,16 @@ async getTokenBalance(
 }
 
 @UseGuards(WalletAuthGuard)
-@Post('test')
-async setApprovalForAll(
-  @Request() req,
-  @Body('operator') operator: string,
-  @Body('approved') approved: boolean,
-): Promise<{ transactionHash: string }> {
-  const walletAddress = req.user.walletAddress;
-  const transactionHash = await this.smartContractService.setApprovalForAll(operator, approved);
-  return { transactionHash };
-}
+@Post('buy')
+  async buyTokens(
+    @Request() req,
+    @Body('tokenIds') tokenIds: number[],
+    @Body('amounts') amounts: number[],
+    @Body('totalPrice') totalPrice: string
+  ) {
+    const walletAddress = req.user.walletAddress;
+    await this.productService.buyTokens(tokenIds, amounts, totalPrice, walletAddress);
+    return { message: 'Tokens purchased successfully' };
+  }
 
 }

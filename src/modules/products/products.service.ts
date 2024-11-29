@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { getRepository, Repository } from 'typeorm';
 import { Product } from './entities/product.entity';
@@ -6,12 +6,10 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { ThirdwebStorage } from '@thirdweb-dev/storage';
 import { ConfigService } from '@nestjs/config';
 import * as QRCode from 'qrcode';
-import { v4 as uuidv4 } from 'uuid';
-import crypto from 'crypto';
-import { DataProductOnchain } from '../blockchain/interfaces/productsc';
 import { SmartContractService } from '../blockchain/ProductContract/smartcontract.service';
 import { lastValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
+import { BigNumber, ethers } from 'ethers';
 
 
 
@@ -400,6 +398,39 @@ async findByTokenId(tokenId: number): Promise<Product[]> {
 
 
 
+ // Phương thức xử lý mua token
+ async buyTokens(
+  tokenIds: number[],
+  amounts: number[],
+  totalPrice: string,
+  walletAddress: string,
+): Promise<{ transactionHash: string; event: any }> {
+  try {
+    const totalPriceInWei = ethers.utils.parseEther(totalPrice);
+    this.smartContractService.setWalletAddress(walletAddress);
+    // Gọi hàm mua token trong smart contract
+    const transactionBuy = await this.smartContractService.buyTokens(
+      tokenIds,
+      amounts,
+      totalPriceInWei
+    );
+    console.log(totalPriceInWei.toString());
+    const transactionHash = await this.storage.upload(transactionBuy);
+    const transacrespone = await this.storage.download(transactionHash);
+    const transURL = transacrespone.url;
+    const qrTrans = await QRCode.toDataURL(transURL);
+    //console.log(qrTrans);
+    // Lặp qua mỗi tokenId trong mảng và gọi callStoreEventCID
+    for (const id of tokenIds) {
+      await this.smartContractService.callStoreEventCID(id, transURL);
+    }
+    console.log(transactionBuy);
+    return transactionBuy;
+  } catch (error) {
+    console.error('Error in ProductService.buyTokens:', error);
+    throw new BadRequestException('Error processing the purchase');
+  }
+}
 
 
 
