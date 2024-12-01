@@ -9,20 +9,19 @@ export class WalletAuthGuard extends AuthGuard('jwtwallet') implements CanActiva
     super();
   }
 
-    canActivate(context: ExecutionContext): boolean {
-      const isPublic = this.reflector.get<boolean>('isPublic', context.getHandler());
-      if (isPublic) {
-        return true;
-      }
-      return super.canActivate(context) as boolean;
+  canActivate(context: ExecutionContext): boolean {
+    const isPublic = this.reflector.get<boolean>('isPublic', context.getHandler());
+    if (isPublic) {
+      return true;
     }
-  
-    handleRequest(err, user, info, context) {
-      if (err || !user) {
-        console.log('Error:', info?.message); // Log lỗi chi tiết
-        throw err || new UnauthorizedException('Invalid or expired WalletToken');
-      }
-      return user; // Trả payload từ Strategy cho Controller
-    }
+    return super.canActivate(context) as boolean;
   }
 
+  handleRequest(err, user, info) {
+    if (err || !user) {
+      console.log('Error:', info?.message);
+      throw err || new UnauthorizedException('Invalid or expired WalletToken');
+    }
+    return user;
+  }
+}

@@ -7,17 +7,12 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 export class WalletStrategy extends PassportStrategy(Strategy, 'jwtwallet') {
   constructor(private configService: ConfigService) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(), // Lấy JWT từ header
-      ignoreExpiration: false, // Không bỏ qua hạn token
-      secretOrKey: configService.get<string>('JWT_SECRET'), 
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(), // Extract JWT from Authorization header
+      ignoreExpiration: false, // Do not ignore token expiration
+      secretOrKey: configService.get<string>('JWT_SECRET'),
     });
   }
 
-  /**
-   * Hàm validate được gọi khi token hợp lệ
-   * @param payload - Payload chứa walletAddress
-   * @returns WalletAddress từ token
-   */
   async validate(payload: { walletAddress: string }) {
     return { walletAddress: payload.walletAddress };
   }

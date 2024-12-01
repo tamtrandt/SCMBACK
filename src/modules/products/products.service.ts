@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { getRepository, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Product } from './entities/product.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { ThirdwebStorage } from '@thirdweb-dev/storage';
@@ -9,13 +9,10 @@ import * as QRCode from 'qrcode';
 import { SmartContractService } from '../blockchain/ProductContract/smartcontract.service';
 import { lastValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
-import { BigNumber, ethers } from 'ethers';
-
-
+import { ethers } from 'ethers';
 
 @Injectable()
 export class ProductService {
-  //Khoi tao storage
   private storage = new ThirdwebStorage();
   constructor(
     @InjectRepository(Product)
@@ -24,7 +21,6 @@ export class ProductService {
     private readonly smartContractService: SmartContractService,
     private readonly httpService: HttpService,
   ) {
-    // Dung Dich Vu IPFS cua thirdweb
     const apiKey = this.configService.get<string>('THIRDWEB_API_KEY');
     this.storage = new ThirdwebStorage({ secretKey: apiKey });
   }
@@ -33,27 +29,27 @@ export class ProductService {
   private priceToString(price: number): string {
     return price.toFixed(2); 
   }
+
   private generateUniqueId(): number {
-    const timestamp = Date.now() % 100000; // Lấy 5 chữ số cuối của timestamp
-    const randomSuffix = Math.floor(Math.random() * 1000); // Thêm 3 chữ số ngẫu nhiên
+    const timestamp = Date.now() % 100000; // Get the last 5 digits of the timestamp
+    const randomSuffix = Math.floor(Math.random() * 1000); // Add 3 random digits
     return parseInt(`${timestamp}${randomSuffix}`);
-}
+  }
 
   async create(
     createProductDto: CreateProductDto,
-    files: Express.Multer.File[], // Các file được upload
-    walletAddress: string, // Địa chỉ ví của người tạo sản phẩm
+    files: Express.Multer.File[], // Uploaded files
+    walletAddress: string, // Creator's wallet address
   ): Promise<any> {
-    // Generate token ID (unique ID for the product)
-    const tokenId = this.generateUniqueId();
-  
-    // Phân loại file (image và các file khác)
+    const tokenId = this.generateUniqueId(); // Generate unique token ID for the product
+
+    // Categorize files (images and other files)
     const images = files.filter((file) => file.mimetype.startsWith('image/'));
     const otherFiles = files.filter((file) => !file.mimetype.startsWith('image/'));
-    const imageCIDs = await this.GetCids(images); // Lấy CID của các hình ảnh
-    const fileCIDs = await this.GetCids(otherFiles); // Lấy CID của các file khác
-  
-    // Tạo metadata cho sản phẩm
+    const imageCIDs = await this.GetCids(images); // Get CIDs for images
+    const fileCIDs = await this.GetCids(otherFiles); // Get CIDs for other files
+
+    // Create product metadata
     const productMetadata = {
       id: tokenId,
       name: createProductDto.name,
@@ -61,34 +57,27 @@ export class ProductService {
       brand: createProductDto.brand,
       category: createProductDto.category,
       size: createProductDto.size,
-      imagecids: imageCIDs, // CID của hình ảnh
-      filecids: fileCIDs,   // CID của các file
-      creater: walletAddress, // Địa chỉ ví của người tạo
+      imagecids: imageCIDs, // CIDs for images
+      filecids: fileCIDs,   // CIDs for other files
+      creater: walletAddress, // Creator's wallet address
     };
-  
-    // Upload metadata lên IPFS
+
+    // Upload metadata to IPFS
     const metadataCID = await this.storage.upload(productMetadata);
     const metadataResponse = await this.storage.download(metadataCID);
     const metadataURL = metadataResponse.url;
-    //console.log('Uploaded metadata CID:', metadataURL);
-     // Tạo mã QR cho file và hình ảnh
-     //const qrCodes = [];
-    //  const fileQRCodes = await this.generateQRCodesFromCIDs(fileCIDs);
-    //  qrCodes.push(...fileQRCodes);
-    //  const imageQRCodes = await this.generateQRCodesFromCIDs(imageCIDs);
-    //  qrCodes.push(...imageQRCodes);
-  
-    // Đặt ví cho backend
+
+    // Set the wallet address for the backend
     this.smartContractService.setWalletAddress(walletAddress);
-  
-    // Chuyển giá sang dạng string và lấy các tham số khác
-    const priceString = this.priceToString(createProductDto.price); // Chuyển giá thành string
-    const amount = createProductDto.quantity; // Tổng số lượng mint
-    const quantity = createProductDto.quantity; // Số lượng tồn kho
-    const status = 'available'; // Trạng thái mặc định
-  
+
+    // Convert price to string format and get other parameters
+    const priceString = this.priceToString(createProductDto.price); // Convert price to string
+    const amount = createProductDto.quantity; // Total quantity to mint
+    const quantity = createProductDto.quantity; // Quantity in stock
+    const status = 'available'; // Default status
+
     try {
-      // Gọi hàm mintProduct từ smart contract
+      // Call the mintProduct function from the smart contract
       const data = await this.smartContractService.mintProduct(
         tokenId,
         amount,
@@ -98,348 +87,297 @@ export class ProductService {
         status,
       );
 
-      //console.log(data);
-    const transactionHash = await this.storage.upload(data);
-    const transacrespone = await this.storage.download(transactionHash);
-    const transURL = transacrespone.url;
-    const qrTrans = await QRCode.toDataURL(transURL);
-    //console.log(qrTrans);
-    const trans = await this.smartContractService.callStoreEventCID(tokenId, transURL);
-    //console.log(trans);
-  
-      
-  
-      // Lưu vào cơ sở dữ liệu
+      const transactionHash = await this.storage.upload(data);
+      const transacrespone = await this.storage.download(transactionHash);
+      const transURL = transacrespone.url;
+      const qrTrans = await QRCode.toDataURL(transURL);
+
+      // Call store event with the transaction URL
+      const trans = await this.smartContractService.callStoreEventCID(tokenId, transURL);
+
+      // Save to the database
       return tokenId;
     } catch (error) {
       console.error('Error minting product or saving to database:', error);
       throw new Error('Failed to create product');
     }
   }
-
-  // Gọi hàm getProduct từ SmartContractService
-  async getProductDetails(tokenId: number): Promise<{
-    tokenId: number;
-    metadata: string;
-    price: string;
-    quantity: number;
-    status: string;
-    owner: string;
-  }> {
-    try {
-      const productInfo = await this.smartContractService.getProductInfo(tokenId);
-      return {
-        tokenId,
-        ...productInfo, // Bao gồm price, quantity, status, owner
-      };
-    } catch (error) {
-      console.error('Error fetching product details:', error);
-      throw new Error('Unable to fetch product details from blockchain.');
-    }
+// Get product details from SmartContractService
+async getProductDetails(tokenId: number): Promise<{
+  tokenId: number;
+  metadata: string;
+  price: string;
+  quantity: number;
+  status: string;
+  owner: string;
+}> {
+  try {
+    const productInfo = await this.smartContractService.getProductInfo(tokenId);
+    return {
+      tokenId,
+      ...productInfo, // Includes price, quantity, status, owner
+    };
+  } catch (error) {
+    console.error('Error fetching product details:', error);
+    throw new Error('Unable to fetch product details from blockchain.');
   }
-  // Get All Product
-  async getAllProductOnChain() { 
-    return await this.smartContractService.getAllTokenIds(); }
+}
 
-  // Tạo một hàm riêng để xử lý việc upload và lấy CID
-  private GetCids = async (files: Express.Multer.File[]): Promise<string[]> => {
-    const cids: string[] = [];
-    for (const file of files) {
-      const cid = await this.storage.upload(file.buffer); 
-      cids.push(cid);
-    }
-    return cids;
-  };
-  // Hàm để chuyển đổi CIDs thành URLs và tạo QR codes
-  private generateQRCodesFromCIDs = async (cids: string[]): Promise<string[]> => {
-    const qrCodes: string[] = [];
-    for (const cid of cids) {
-      const { url } = await this.storage.download(cid); 
-      const qrCode = await QRCode.toDataURL(url);
-      qrCodes.push(qrCode);
-    }
-    return qrCodes;
-  };
+// Get all products on-chain
+async getAllProductOnChain() {
+  return await this.smartContractService.getAllTokenIds();
+}
 
-  //Update On Chain
-  async updateMetadata(
-    id: number, 
-    name: string,
-    description: string,
-    brand: string,
-    category: string,
-    size: string,
-    status: string,
-    imagecids: string[],
-    filecids: string[],
-    newFiles: Express.Multer.File[],
-    walletAddress: string, // Thêm walletAddress
-  ): Promise<any> {
-    try {
-      const qrCodes = []; 
-      const images = newFiles.filter(file => file.mimetype.startsWith('image/'));
-      const otherFiles = newFiles.filter(file => !file.mimetype.startsWith('image/'));
+// Helper function to handle file upload and get CIDs
+private GetCids = async (files: Express.Multer.File[]): Promise<string[]> => {
+  const cids: string[] = [];
+  for (const file of files) {
+    const cid = await this.storage.upload(file.buffer);
+    cids.push(cid);
+  }
+  return cids;
+};
 
-      // Upload hình ảnh và các tệp khác
-      const uploadedImageCids = await this.GetCids(images);
-      const uploadedFileCids = await this.GetCids(otherFiles);
-      // Đảm bảo imagecids là một mảng hoặc chuyển đổi thành mảng nếu nó không phải là mảng
-      if (imagecids === undefined) {
-        imagecids = [];
-      } else if (!Array.isArray(imagecids)) {
-        imagecids = [imagecids]; 
-      }
-      if (filecids === undefined) {
-        filecids = [];
-      } else if (!Array.isArray(filecids)) {
-        filecids = [filecids]; 
-      }
+// Function to convert CIDs to URLs and generate QR codes
+private generateQRCodesFromCIDs = async (cids: string[]): Promise<string[]> => {
+  const qrCodes: string[] = [];
+  for (const cid of cids) {
+    const { url } = await this.storage.download(cid);
+    const qrCode = await QRCode.toDataURL(url);
+    qrCodes.push(qrCode);
+  }
+  return qrCodes;
+};
 
-      // Gộp các CIDs mới vào danh sách hiện tại
-      imagecids.push(...uploadedImageCids);
-      filecids.push(...uploadedFileCids);
-        // Generate QR codes for file CIDs
+async updateMetadata(
+  id: number,
+  name: string,
+  description: string,
+  brand: string,
+  category: string,
+  size: string,
+  status: string,
+  imagecids: string[],
+  filecids: string[],
+  newFiles: Express.Multer.File[],
+  walletAddress: string,
+): Promise<any> {
+  try {
+    const qrCodes = [];
+    const images = newFiles.filter(file => file.mimetype.startsWith('image/'));
+    const otherFiles = newFiles.filter(file => !file.mimetype.startsWith('image/'));
+
+    const uploadedImageCids = await this.GetCids(images);
+    const uploadedFileCids = await this.GetCids(otherFiles);
+
+    if (!imagecids) imagecids = [];
+    if (!filecids) filecids = [];
+    imagecids = Array.isArray(imagecids) ? imagecids : [imagecids];
+    filecids = Array.isArray(filecids) ? filecids : [filecids];
+
+    imagecids.push(...uploadedImageCids);
+    filecids.push(...uploadedFileCids);
+
     const fileQRCodes = await this.generateQRCodesFromCIDs(filecids);
     qrCodes.push(...fileQRCodes);
     const imageQRCodes = await this.generateQRCodesFromCIDs(imagecids);
     qrCodes.push(...imageQRCodes);
 
-     // Gọi hàm setWalletAddress trước khi gọi updateProduct
-     this.smartContractService.setWalletAddress(walletAddress);
-
-      const Metadata = {
-        id,
-        name,
-        description,     
-        brand,
-        category,
-        size,
-        status,
-        imagecids,
-        filecids,
-      };
-      const metadataCID = await this.storage.upload(Metadata);
-      const metadataResponse = await this.storage.download(metadataCID);
-      const metadataURL = metadataResponse.url;
-      console.log('Uploaded metadata CID:', metadataURL);
-
-      const transactionupdat = await this.smartContractService.updateMetadata(id,metadataCID  );
-
-      const transactionHash = await this.storage.upload(transactionupdat);
-      const transacrespone = await this.storage.download(transactionHash);
-      const transURL = transacrespone.url;
-      const qrTrans = await QRCode.toDataURL(transURL);
-      //console.log(qrTrans);
-      const trans = await this.smartContractService.callStoreEventCID(id, transURL);
-
-      // Lấy repository của Product
-      // Tìm sản phẩm dựa trên id
-      // const product = await this.productRepository.findOne({ where: { id } });
-        
-      //   if (!product) {
-      //       throw new Error(`Product with id ${id} not found`);
-      //   }
-      //  product.qrcode = qrCodes; 
-       //return await this.productRepository.save(product);
-       return transactionupdat
-     
-    } catch (error) {
-      console.error('Failed to update product:', error);
-      throw error; 
-    }
-  }
-
- // Update Price
- async updateProductPrice(id: number, price: string, walletAddress: string,): Promise<any> {
-  try {
     this.smartContractService.setWalletAddress(walletAddress);
-      // Gọi hàm updatePrice từ smart contract service
-      const transactionUPrice = await this.smartContractService.updatePrice(id, price);
-      const transactionHash = await this.storage.upload(transactionUPrice);
-      const transacrespone = await this.storage.download(transactionHash);
-      const transURL = transacrespone.url;
-      const qrTrans = await QRCode.toDataURL(transURL);
-      //console.log(qrTrans);
-      const trans = await this.smartContractService.callStoreEventCID(id, transURL);
-      
-      return transactionUPrice;
+
+    const metadata = {
+      id,
+      name,
+      description,
+      brand,
+      category,
+      size,
+      status,
+      imagecids,
+      filecids,
+    };
+
+    const metadataCID = await this.storage.upload(metadata);
+    const metadataResponse = await this.storage.download(metadataCID);
+    const metadataURL = metadataResponse.url;
+    console.log('Uploaded metadata CID:', metadataURL);
+
+    const transactionUpdate = await this.smartContractService.updateMetadata(id, metadataCID);
+    const transactionHash = await this.storage.upload(transactionUpdate);
+    const transacResponse = await this.storage.download(transactionHash);
+    const transURL = transacResponse.url;
+
+    await QRCode.toDataURL(transURL);
+    await this.smartContractService.callStoreEventCID(id, transURL);
+
+    return transactionUpdate;
   } catch (error) {
-      console.error('Error in ProductService updating price:', error);
-      throw new Error('Failed to update product price at ProService');
+    console.error('Failed to update product:', error);
+    throw error;
   }
 }
-// Cập nhật số lượng sản phẩm
-async updateProductQuantity(id: number, quantity: number, walletAddress: string,): Promise<any> {
+ // Update product price
+async updateProductPrice(id: number, price: string, walletAddress: string): Promise<any> {
   try {
     this.smartContractService.setWalletAddress(walletAddress);
-      // Gọi hàm updateQuantity từ smart contract service
-      const transactionUQuan = await this.smartContractService.updateQuantity(id, quantity);
-      const transactionHash = await this.storage.upload(transactionUQuan);
-      const transacrespone = await this.storage.download(transactionHash);
-      const transURL = transacrespone.url;
-      const qrTrans = await QRCode.toDataURL(transURL);
-      //console.log(qrTrans);
-      const trans = await this.smartContractService.callStoreEventCID(id, transURL);
-      return transactionUQuan;
+
+    const transactionUpdatePrice = await this.smartContractService.updatePrice(id, price);
+    const transactionHash = await this.storage.upload(transactionUpdatePrice);
+    const transacResponse = await this.storage.download(transactionHash);
+    const transURL = transacResponse.url;
+
+    await QRCode.toDataURL(transURL);
+    await this.smartContractService.callStoreEventCID(id, transURL);
+
+    return transactionUpdatePrice;
   } catch (error) {
-      console.error('Error in ProductService updating quantity:', error);
-      throw new Error('Failed to update product quantity');
+    console.error('Error in ProductService updating price:', error);
+    throw new Error('Failed to update product price');
   }
 }
 
+// Update product quantity
+async updateProductQuantity(id: number, quantity: number, walletAddress: string): Promise<any> {
+  try {
+    this.smartContractService.setWalletAddress(walletAddress);
 
+    const transactionUQuan = await this.smartContractService.updateQuantity(id, quantity);
+    const transactionHash = await this.storage.upload(transactionUQuan);
+    const transacResponse = await this.storage.download(transactionHash);
+    const transURL = transacResponse.url;
+    
+    await QRCode.toDataURL(transURL);
+    await this.smartContractService.callStoreEventCID(id, transURL);
+
+    return transactionUQuan;
+  } catch (error) {
+    console.error('Error in ProductService updating quantity:', error);
+    throw new Error('Failed to update product quantity');
+  }
+}
+
+// Find products by TokenId
 async findByTokenId(tokenId: number): Promise<Product[]> {
-  // Truy vấn tất cả các sản phẩm có TokenId giống với giá trị tokenId truyền vào
   const products = await this.productRepository.find({
-    where: { TokenId: tokenId },  // Lọc theo TokenId
+    where: { TokenId: tokenId },  // Filter by TokenId
   });
 
-  // Nếu không tìm thấy sản phẩm nào với TokenId truyền vào, ném exception
   if (products.length === 0) {
     throw new NotFoundException(`No products found with TokenId ${tokenId}`);
   }
 
-  // Trả về danh sách các sản phẩm tìm được
   return products;
 }
 
+// Get all products
+async findAll(): Promise<{ count: number; product_ids: number[] }> {
+  const products = await this.productRepository.find();
+  const count = products.length;
+  const product_ids = products.map(product => product.id);
+  return { count, product_ids };
+}
 
+// Delete product
+async delete(id: number, walletAddress: string): Promise<any> {
+  this.smartContractService.setWalletAddress(walletAddress);
 
-  async findAll(): Promise<{ count: number; product_ids: number[] }> {
-    const products = await this.productRepository.find(); 
-    const count = products.length; 
-    const product_ids = products.map(product => product.id); 
-    return { count, product_ids };
+  const balance = await this.smartContractService.getTokenBalance(walletAddress, id);
+  
+  if (balance <= 0) {
+    throw new Error(`Wallet ${walletAddress} does not own any tokens of ID ${id}`);
   }
 
+  const transactionDelete = await this.smartContractService.burnProduct(id, balance);
+  const transactionHash = await this.storage.upload(transactionDelete);
+  const transacResponse = await this.storage.download(transactionHash);
+  const transURL = transacResponse.url;
 
-  async delete(id: number, walletAddress: string): Promise<any> {
-    // Đặt địa chỉ ví hiện tại
-    this.smartContractService.setWalletAddress(walletAddress);
-  
-    // Lấy số lượng token mà ví sở hữu
-    const balance = await this.smartContractService.getTokenBalance(walletAddress, id);
-  
-    // Xác nhận rằng ví sở hữu ít nhất 1 token
-    if (balance <= 0) {
-      throw new Error(`Wallet ${walletAddress} does not own any tokens of ID ${id}`);
-    }
-  
-    // Thực hiện burn toàn bộ số token mà ví sở hữu
-    const transactionDelete = await this.smartContractService.burnProduct(id, balance);
-    const transactionHash = await this.storage.upload(transactionDelete);
-      const transacrespone = await this.storage.download(transactionHash);
-      const transURL = transacrespone.url;
-      const qrTrans = await QRCode.toDataURL(transURL);
-      //console.log(qrTrans);
-      const trans = await this.smartContractService.callStoreEventCID(id, transURL);
-  
-    // Xóa sản phẩm khỏi cơ sở dữ liệu nếu burn thành công
-    //const result = await this.productRepository.delete(id);
-  
-    // Trả về kết quả xóa
-    return transactionDelete;
-  }
-  
-  async getAllCIDs(tokenId: number) {
-    try {
-      // Gọi hàm getTransactionCIDs từ smart contract
-      const cids = await this.smartContractService.getAllCIDs(tokenId);
-      const result = await this.getEventData(cids);
-      return result;
-    } catch (error) {
-      console.error('Error fetching CIDs:', error);
-      throw new Error('Unable to fetch CIDs from contract');
-    }
-  }
+  await QRCode.toDataURL(transURL);
+  await this.smartContractService.callStoreEventCID(id, transURL);
 
+  return transactionDelete;
+}
 
-
-
-  async getEventData(ipfsLinks: string[]) {
-    const result = [];
-
-    // Lặp qua tất cả các link IPFS
-    for (let link of ipfsLinks) {
-      try {
-        // Lấy dữ liệu từ IPFS
-        const response = await lastValueFrom(this.httpService.get(link));
-
-        // Giả sử dữ liệu trả về là JSON, chuyển đổi và tạo object
-        const data = response.data;
-
-
-        const eventObject = {
-          transactionHash: data.transactionHash,
-          event: {
-            tokenId: data.event.tokenId, // Đảm bảo truy cập đúng thuộc tính
-            action: data.event.action,
-            initiator: data.event.initiator,
-            timestamp: data.event.timestamp,
-            additionalInfo: data.event.additionalInfo,
-          },
-        };
-        
-
-        // Thêm object vào kết quả
-        result.push(eventObject);
-      } catch (error) {
-        console.error(`Error fetching data from IPFS: ${link}`, error);
-      }
-    }
-
-    // Trả về mảng kết quả
+// Get all CIDs related to a product
+async getAllCIDs(tokenId: number) {
+  try {
+    const cids = await this.smartContractService.getAllCIDs(tokenId);
+    const result = await this.getEventData(cids);
     return result;
+  } catch (error) {
+    console.error('Error fetching CIDs:', error);
+    throw new Error('Unable to fetch CIDs from contract');
+  }
+}
+
+// Get event data from IPFS links
+async getEventData(ipfsLinks: string[]) {
+  const result = [];
+
+  for (let link of ipfsLinks) {
+    try {
+      const response = await lastValueFrom(this.httpService.get(link));
+      const data = response.data;
+
+      const eventObject = {
+        transactionHash: data.transactionHash,
+        event: {
+          tokenId: data.event.tokenId,
+          action: data.event.action,
+          initiator: data.event.initiator,
+          timestamp: data.event.timestamp,
+          additionalInfo: data.event.additionalInfo,
+        },
+      };
+
+      result.push(eventObject);
+    } catch (error) {
+      console.error(`Error fetching data from IPFS: ${link}`, error);
+    }
   }
 
+  return result;
+}
 
-
-
-
-
-
- // Phương thức xử lý mua token
- async buyTokens(
+// Buy tokens
+async buyTokens(
   tokenIds: number[],
   amounts: number[],
   totalPrice: string,
-  walletAddress: string,
+  walletAddress: string
 ): Promise<{ transactionHash: string; event: any }> {
   try {
-    const totalPriceInWei = ethers.utils.parseEther(totalPrice);
+    const totalPriceInWei = ethers.utils.parseEther(totalPrice); // Convert price to Wei
+
     this.smartContractService.setWalletAddress(walletAddress);
-    // Gọi hàm mua token trong smart contract
+
+    // Call the smart contract method to buy tokens
     const transactionBuy = await this.smartContractService.buyTokens(
       tokenIds,
       amounts,
       totalPriceInWei
     );
-    console.log(totalPriceInWei.toString());
+
+    // Upload transaction and get URL
     const transactionHash = await this.storage.upload(transactionBuy);
-    const transacrespone = await this.storage.download(transactionHash);
-    const transURL = transacrespone.url;
-    const qrTrans = await QRCode.toDataURL(transURL);
-    //console.log(qrTrans);
-    // Lặp qua mỗi tokenId trong mảng và gọi callStoreEventCID
-    for (const id of tokenIds) {
-      await this.smartContractService.callStoreEventCID(id, transURL);
+    const transactionResponse = await this.storage.download(transactionHash);
+    const transactionURL = transactionResponse.url;
+
+    // Generate QR code from transaction URL
+    const qrCode = await QRCode.toDataURL(transactionURL);
+
+    // Iterate over token IDs to store event CID in contract
+    for (const tokenId of tokenIds) {
+      await this.smartContractService.callStoreEventCID(tokenId, transactionURL);
     }
+
     console.log(transactionBuy);
-    return transactionBuy;
+
+    return { transactionHash: transactionHash, event: transactionBuy }; // Return transaction details
   } catch (error) {
-    console.error('Error in ProductService.buyTokens:', error);
+    console.error('Error in buyTokens:', error);
     throw new BadRequestException('Error processing the purchase');
   }
 }
-
-
-
-
-
-
-
-
-
-
 
 }
