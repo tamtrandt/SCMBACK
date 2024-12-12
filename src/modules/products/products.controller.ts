@@ -161,9 +161,10 @@ export class ProductController {
     @Body('tokenIds') tokenIds: number[],
     @Body('amounts') amounts: number[],
     @Body('totalPrice') totalPrice: string,
+    @Body('email') email: string,
   ) {
     const walletAddress = req.user.walletAddress;
-    await this.productService.buyTokens(tokenIds, amounts, totalPrice, walletAddress);
+    await this.productService.buyTokens(tokenIds, amounts, totalPrice,email, walletAddress);
     return { message: 'Tokens purchased successfully' };
   }
 }

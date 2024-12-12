@@ -11,6 +11,7 @@ import { lastValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { ethers } from 'ethers';
 import { TransactionTypes } from 'ethers/lib/utils';
+import { MailerService } from '@nestjs-modules/mailer';
 
 @Injectable()
 export class ProductService {
@@ -21,6 +22,7 @@ export class ProductService {
     private configService: ConfigService,
     private readonly smartContractService: SmartContractService,
     private readonly httpService: HttpService,
+    private readonly mailerService: MailerService,
   ) {
     const apiKey = this.configService.get<string>('THIRDWEB_API_KEY');
     this.storage = new ThirdwebStorage({ secretKey: apiKey });
@@ -207,8 +209,6 @@ async updateMetadata(
     const transactionHash = await this.storage.upload(transactionUpdate);
     const transacResponse = await this.storage.download(transactionHash);
     const transURL = transacResponse.url;
-
-    await QRCode.toDataURL(transURL);
     await this.smartContractService.callStoreEventCID(id, transURL);
 
     return transactionUpdate;
@@ -226,8 +226,6 @@ async updateProductPrice(id: number, price: string, walletAddress: string): Prom
     const transactionHash = await this.storage.upload(transactionUpdatePrice);
     const transacResponse = await this.storage.download(transactionHash);
     const transURL = transacResponse.url;
-
-    await QRCode.toDataURL(transURL);
     await this.smartContractService.callStoreEventCID(id, transURL);
 
     return transactionUpdatePrice;
@@ -246,8 +244,6 @@ async updateProductQuantity(id: number, quantity: number, walletAddress: string)
     const transactionHash = await this.storage.upload(transactionUQuan);
     const transacResponse = await this.storage.download(transactionHash);
     const transURL = transacResponse.url;
-    
-    await QRCode.toDataURL(transURL);
     await this.smartContractService.callStoreEventCID(id, transURL);
 
     return transactionUQuan;
@@ -292,8 +288,6 @@ async delete(id: number, walletAddress: string): Promise<any> {
   const transactionHash = await this.storage.upload(transactionDelete);
   const transacResponse = await this.storage.download(transactionHash);
   const transURL = transacResponse.url;
-
-  await QRCode.toDataURL(transURL);
   await this.smartContractService.callStoreEventCID(id, transURL);
 
   return transactionDelete;
@@ -308,34 +302,6 @@ async getAllCIDs(tokenId: number) {
   } catch (error) {
     console.error('Error fetching CIDs:', error);
     throw new Error('Unable to fetch CIDs from contract');
-  }
-}
-async getQRCodeFromIPFS(ipfsLink: string) {
-  try {
-    const response = await lastValueFrom(this.httpService.get(ipfsLink));
-    const data = response.data;
-    console.log(data);
-    const qrCode = QRCode.toDataURL(data); 
-    return qrCode;
-  } catch (error) {
-    console.error(`Error fetching QR code from IPFS: ${ipfsLink}`, error);
-    return null;
-  }
-}
-
-// Helper method to generate QR code
-private async generateQRCode(data: string): Promise<string> {
-  try {
-    // Generates a base64 encoded QR code image
-    return await QRCode.toDataURL(data, {
-      errorCorrectionLevel: 'M',
-      type: 'image/png',
-      quality: 0.92,
-      margin: 1
-    });
-  } catch (error) {
-    console.error('Error generating QR code:', error);
-    return null;
   }
 }
 
@@ -370,44 +336,67 @@ async getEventData(ipfsLinks: string[]) {
   return result;
 }
 
-// Buy tokens
 async buyTokens(
   tokenIds: number[],
   amounts: number[],
   totalPrice: string,
+  email: string,
   walletAddress: string
 ): Promise<{ transactionHash: string; event: any }> {
   try {
-    const totalPriceInWei = ethers.utils.parseEther(totalPrice); // Convert price to Wei
+    // Convert total price to Wei
+    const totalPriceInWei = ethers.utils.parseEther(totalPrice);
 
+    // Set wallet address in smart contract service
     this.smartContractService.setWalletAddress(walletAddress);
 
-    // Call the smart contract method to buy tokens
+    // Call smart contract to buy tokens
     const transactionBuy = await this.smartContractService.buyTokens(
       tokenIds,
       amounts,
       totalPriceInWei
     );
 
-    // Upload transaction and get URL
+    // Upload transaction to storage
     const transactionHash = await this.storage.upload(transactionBuy);
     const transactionResponse = await this.storage.download(transactionHash);
     const transactionURL = transactionResponse.url;
 
     // Generate QR code from transaction URL
-    const qrCode = await QRCode.toDataURL(transactionURL);
+    const QR = await QRCode.toDataURL(transactionURL);  // Ensure this returns base64-encoded string
 
-    // Iterate over token IDs to store event CID in contract
+    // Format wallet address: 5 digits at the start and end, with "..."
+    const formattedWalletAddress =
+      walletAddress.slice(0, 5) + '...' + walletAddress.slice(-5);
+
+    // Store event CID in the smart contract
     for (const tokenId of tokenIds) {
       await this.smartContractService.callStoreEventCID(tokenId, transactionURL);
     }
 
-    console.log(transactionBuy);
+    // Prepare and send the email after successful purchase
+    await this.mailerService.sendMail({
+      to: email,
+      from: 'adhartbayer@gmail.com',
+      subject: 'Thank You for Your Purchase!',
+      template: 'successfully',  // Ensure this is the template path
+      context: {
+        username: email, 
+        walletAddress: formattedWalletAddress, 
+      },
+      attachments: [
+        {
+          filename: 'QRCode.png',  
+          path: QR,  
+          cid: 'unique-qrcode-id',  
+        },
+      ],
+    });
 
     return { transactionHash: transactionHash, event: transactionBuy }; // Return transaction details
   } catch (error) {
     console.error('Error in buyTokens:', error);
-    throw new BadRequestException('Error processing the purchase');
+    throw new BadRequestException('Error processing the purchase'); // Do not send email if an error occurs
   }
 }
 
