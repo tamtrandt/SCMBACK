@@ -10,6 +10,7 @@ import { SmartContractService } from '../blockchain/ProductContract/smartcontrac
 import { lastValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { ethers } from 'ethers';
+import { TransactionTypes } from 'ethers/lib/utils';
 
 @Injectable()
 export class ProductService {
@@ -90,10 +91,10 @@ export class ProductService {
       const transactionHash = await this.storage.upload(data);
       const transacrespone = await this.storage.download(transactionHash);
       const transURL = transacrespone.url;
-      const qrTrans = await QRCode.toDataURL(transURL);
+     
 
       // Call store event with the transaction URL
-      const trans = await this.smartContractService.callStoreEventCID(tokenId, transURL);
+      await this.smartContractService.callStoreEventCID(tokenId, transURL);
 
       // Save to the database
       return tokenId;
@@ -309,6 +310,34 @@ async getAllCIDs(tokenId: number) {
     throw new Error('Unable to fetch CIDs from contract');
   }
 }
+async getQRCodeFromIPFS(ipfsLink: string) {
+  try {
+    const response = await lastValueFrom(this.httpService.get(ipfsLink));
+    const data = response.data;
+    console.log(data);
+    const qrCode = QRCode.toDataURL(data); 
+    return qrCode;
+  } catch (error) {
+    console.error(`Error fetching QR code from IPFS: ${ipfsLink}`, error);
+    return null;
+  }
+}
+
+// Helper method to generate QR code
+private async generateQRCode(data: string): Promise<string> {
+  try {
+    // Generates a base64 encoded QR code image
+    return await QRCode.toDataURL(data, {
+      errorCorrectionLevel: 'M',
+      type: 'image/png',
+      quality: 0.92,
+      margin: 1
+    });
+  } catch (error) {
+    console.error('Error generating QR code:', error);
+    return null;
+  }
+}
 
 // Get event data from IPFS links
 async getEventData(ipfsLinks: string[]) {
@@ -318,17 +347,19 @@ async getEventData(ipfsLinks: string[]) {
     try {
       const response = await lastValueFrom(this.httpService.get(link));
       const data = response.data;
+      
 
       const eventObject = {
         transactionHash: data.transactionHash,
         event: {
           tokenId: data.event.tokenId,
           action: data.event.action,
-          initiator: data.event.initiator,
-          timestamp: data.event.timestamp,
-          additionalInfo: data.event.additionalInfo,
+          creator: data.event.creator,
+          timestamp: data.event.timestamp,     
         },
+        qrCode: await QRCode.toDataURL(link),
       };
+      
 
       result.push(eventObject);
     } catch (error) {

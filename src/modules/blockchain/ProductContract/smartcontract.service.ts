@@ -48,9 +48,8 @@ private decodeEvent(event: any) {
   return {
     tokenId: BigNumber.from(event[0]).toNumber(), // Convert tokenId from BigNumber to number
     action: event[1], // Action type (e.g., 'MINT')
-    initiator: event[2], // Address of the initiator
+    creator: event[2], // Address of the initiator
     timestamp: new Date(BigNumber.from(event[3]).toNumber() * 1000).toISOString(), // Convert timestamp to ISO format
-    additionalInfo: event[4], // Additional information (e.g., metadata URL or IPFS CID)
   };
 }
 
