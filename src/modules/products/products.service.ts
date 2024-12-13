@@ -10,7 +10,6 @@ import { SmartContractService } from '../blockchain/ProductContract/smartcontrac
 import { lastValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { ethers } from 'ethers';
-import { TransactionTypes } from 'ethers/lib/utils';
 import { MailerService } from '@nestjs-modules/mailer';
 
 @Injectable()
